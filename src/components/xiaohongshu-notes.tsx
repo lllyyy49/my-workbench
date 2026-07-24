@@ -30,6 +30,15 @@ interface XiaohongshuNote {
     salesVolume: number; // 销量
     promotionCost: number; // 推广花费
   };
+  // 刷单数据
+  fakeData?: {
+    fakeViews: number; // 刷的浏览量
+    fakeLikes: number; // 刷的点赞数
+    fakeComments: number; // 刷的评论数
+    fakeShares: number; // 刷的分享数
+    fakeSalesAmount: number; // 刷单金额
+    fakeSalesVolume: number; // 刷单销量
+  };
   tags: string[];
   createdAt: number;
 }
@@ -53,6 +62,12 @@ export function XiaohongshuNotes() {
     salesAmount: 0,
     salesVolume: 0,
     promotionCost: 0,
+    fakeViews: 0,
+    fakeLikes: 0,
+    fakeComments: 0,
+    fakeShares: 0,
+    fakeSalesAmount: 0,
+    fakeSalesVolume: 0,
     tags: '',
   });
   const [newImages, setNewImages] = useState<NoteImage[]>([]);
@@ -84,6 +99,12 @@ export function XiaohongshuNotes() {
       salesAmount: 0,
       salesVolume: 0,
       promotionCost: 0,
+      fakeViews: 0,
+      fakeLikes: 0,
+      fakeComments: 0,
+      fakeShares: 0,
+      fakeSalesAmount: 0,
+      fakeSalesVolume: 0,
       tags: '',
     });
     setNewImages([]);
@@ -111,6 +132,12 @@ export function XiaohongshuNotes() {
       salesAmount: note.salesData?.salesAmount || 0,
       salesVolume: note.salesData?.salesVolume || 0,
       promotionCost: note.salesData?.promotionCost || 0,
+      fakeViews: note.fakeData?.fakeViews || 0,
+      fakeLikes: note.fakeData?.fakeLikes || 0,
+      fakeComments: note.fakeData?.fakeComments || 0,
+      fakeShares: note.fakeData?.fakeShares || 0,
+      fakeSalesAmount: note.fakeData?.fakeSalesAmount || 0,
+      fakeSalesVolume: note.fakeData?.fakeSalesVolume || 0,
       tags: note.tags.join(', '),
     });
     setNewImages(note.images || []);
@@ -158,6 +185,16 @@ export function XiaohongshuNotes() {
       promotionCost: formData.promotionCost,
     } : undefined;
     
+    // 刷单数据
+    const fakeData = {
+      fakeViews: formData.fakeViews,
+      fakeLikes: formData.fakeLikes,
+      fakeComments: formData.fakeComments,
+      fakeShares: formData.fakeShares,
+      fakeSalesAmount: formData.fakeSalesAmount,
+      fakeSalesVolume: formData.fakeSalesVolume,
+    };
+    
     if (editingNote) {
       setNotes(notes.map(n => n.id === editingNote.id ? {
         ...n,
@@ -175,6 +212,7 @@ export function XiaohongshuNotes() {
           shares: formData.shares,
         },
         salesData,
+        fakeData,
         tags,
       } : n));
     } else {
@@ -194,6 +232,7 @@ export function XiaohongshuNotes() {
           shares: formData.shares,
         },
         salesData,
+        fakeData,
         tags,
         createdAt: Date.now(),
       };
@@ -227,15 +266,39 @@ export function XiaohongshuNotes() {
   const filteredNotes = filterType === 'all' ? notes : notes.filter(n => n.type === filterType);
   const normalCount = notes.filter(n => n.type === 'normal').length;
   const productCount = notes.filter(n => n.type === 'product').length;
-  const totalViews = notes.reduce((sum, n) => sum + n.stats.views, 0);
-  const totalLikes = notes.reduce((sum, n) => sum + n.stats.likes, 0);
   
-  // 商品数据统计
+  // 真实数据（剔除刷单影响）
+  const totalViews = notes.reduce((sum, n) => {
+    const fakeViews = n.fakeData?.fakeViews || 0;
+    return sum + Math.max(0, n.stats.views - fakeViews);
+  }, 0);
+  const totalLikes = notes.reduce((sum, n) => {
+    const fakeLikes = n.fakeData?.fakeLikes || 0;
+    return sum + Math.max(0, n.stats.likes - fakeLikes);
+  }, 0);
+  
+  // 刷单数据统计
+  const totalFakeViews = notes.reduce((sum, n) => sum + (n.fakeData?.fakeViews || 0), 0);
+  const totalFakeLikes = notes.reduce((sum, n) => sum + (n.fakeData?.fakeLikes || 0), 0);
+  const totalFakeComments = notes.reduce((sum, n) => sum + (n.fakeData?.fakeComments || 0), 0);
+  const totalFakeShares = notes.reduce((sum, n) => sum + (n.fakeData?.fakeShares || 0), 0);
+  
+  // 商品数据统计（剔除刷单影响）
   const productNotes = notes.filter(n => n.type === 'product' && n.salesData);
-  const totalSalesAmount = productNotes.reduce((sum, n) => sum + (n.salesData?.salesAmount || 0), 0);
-  const totalSalesVolume = productNotes.reduce((sum, n) => sum + (n.salesData?.salesVolume || 0), 0);
+  const totalSalesAmount = productNotes.reduce((sum, n) => {
+    const fakeSales = n.fakeData?.fakeSalesAmount || 0;
+    return sum + Math.max(0, (n.salesData?.salesAmount || 0) - fakeSales);
+  }, 0);
+  const totalSalesVolume = productNotes.reduce((sum, n) => {
+    const fakeSalesVol = n.fakeData?.fakeSalesVolume || 0;
+    return sum + Math.max(0, (n.salesData?.salesVolume || 0) - fakeSalesVol);
+  }, 0);
   const totalPromotionCost = productNotes.reduce((sum, n) => sum + (n.salesData?.promotionCost || 0), 0);
   const overallROI = totalPromotionCost > 0 ? (totalSalesAmount / totalPromotionCost).toFixed(2) : '0.00';
+  
+  // 刷单销售统计
+  const totalFakeSalesAmount = notes.reduce((sum, n) => sum + (n.fakeData?.fakeSalesAmount || 0), 0);
+  const totalFakeSalesVolume = notes.reduce((sum, n) => sum + (n.fakeData?.fakeSalesVolume || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -268,20 +331,24 @@ export function XiaohongshuNotes() {
           <p className="text-xl font-bold mt-1">{productCount}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-3">
-          <p className="text-xs text-muted-foreground">总浏览量</p>
-          <p className="text-xl font-bold mt-1">{totalViews.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">真实浏览量</p>
+          <p className="text-xl font-bold mt-1 text-green-600">{totalViews.toLocaleString()}</p>
+          {totalFakeViews > 0 && <p className="text-xs text-orange-500">刷单: {totalFakeViews.toLocaleString()}</p>}
         </div>
         <div className="bg-card rounded-xl border border-border p-3">
-          <p className="text-xs text-muted-foreground">总点赞数</p>
-          <p className="text-xl font-bold mt-1">{totalLikes.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">真实点赞数</p>
+          <p className="text-xl font-bold mt-1 text-green-600">{totalLikes.toLocaleString()}</p>
+          {totalFakeLikes > 0 && <p className="text-xs text-orange-500">刷单: {totalFakeLikes.toLocaleString()}</p>}
         </div>
         <div className="bg-card rounded-xl border border-border p-3 bg-primary/5">
-          <p className="text-xs text-muted-foreground">总销售额</p>
+          <p className="text-xs text-muted-foreground">真实销售额</p>
           <p className="text-xl font-bold mt-1 text-primary">¥{totalSalesAmount.toLocaleString()}</p>
+          {totalFakeSalesAmount > 0 && <p className="text-xs text-orange-500">刷单: ¥{totalFakeSalesAmount.toLocaleString()}</p>}
         </div>
         <div className="bg-card rounded-xl border border-border p-3">
-          <p className="text-xs text-muted-foreground">总销量</p>
-          <p className="text-xl font-bold mt-1">{totalSalesVolume}</p>
+          <p className="text-xs text-muted-foreground">真实销量</p>
+          <p className="text-xl font-bold mt-1 text-green-600">{totalSalesVolume}</p>
+          {totalFakeSalesVolume > 0 && <p className="text-xs text-orange-500">刷单: {totalFakeSalesVolume}</p>}
         </div>
         <div className="bg-card rounded-xl border border-border p-3 bg-primary/5">
           <p className="text-xs text-muted-foreground">整体ROI</p>
@@ -329,8 +396,10 @@ export function XiaohongshuNotes() {
       {filteredNotes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredNotes.map(note => {
+            // 使用真实销售数据计算ROI
+            const realSalesAmount = Math.max(0, (note.salesData?.salesAmount || 0) - (note.fakeData?.fakeSalesAmount || 0));
             const roi = note.salesData && note.salesData.promotionCost > 0
-              ? (note.salesData.salesAmount / note.salesData.promotionCost).toFixed(2)
+              ? (realSalesAmount / note.salesData.promotionCost).toFixed(2)
               : null;
             
             return (
@@ -414,21 +483,25 @@ export function XiaohongshuNotes() {
 
                 {/* 互动数据 */}
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1" title={`真实: ${Math.max(0, note.stats.views - (note.fakeData?.fakeViews || 0))}`}>
                     <Eye className="h-4 w-4" />
                     {note.stats.views.toLocaleString()}
+                    {(note.fakeData?.fakeViews || 0) > 0 && <span className="text-xs text-orange-500">(-{note.fakeData?.fakeViews})</span>}
                   </span>
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1" title={`真实: ${Math.max(0, note.stats.likes - (note.fakeData?.fakeLikes || 0))}`}>
                     <Heart className="h-4 w-4" />
                     {note.stats.likes.toLocaleString()}
+                    {(note.fakeData?.fakeLikes || 0) > 0 && <span className="text-xs text-orange-500">(-{note.fakeData?.fakeLikes})</span>}
                   </span>
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1" title={`真实: ${Math.max(0, note.stats.comments - (note.fakeData?.fakeComments || 0))}`}>
                     <MessageCircle className="h-4 w-4" />
                     {note.stats.comments.toLocaleString()}
+                    {(note.fakeData?.fakeComments || 0) > 0 && <span className="text-xs text-orange-500">(-{note.fakeData?.fakeComments})</span>}
                   </span>
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1" title={`真实: ${Math.max(0, note.stats.shares - (note.fakeData?.fakeShares || 0))}`}>
                     <Share2 className="h-4 w-4" />
                     {note.stats.shares.toLocaleString()}
+                    {(note.fakeData?.fakeShares || 0) > 0 && <span className="text-xs text-orange-500">(-{note.fakeData?.fakeShares})</span>}
                   </span>
                 </div>
 
@@ -437,16 +510,20 @@ export function XiaohongshuNotes() {
                   <div className="bg-secondary/50 rounded-lg p-3 mb-3 space-y-2">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-foreground mb-1">
                       <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                      销售数据
+                      销售数据（真实）
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">销售金额</span>
-                        <span className="font-medium text-primary">¥{note.salesData.salesAmount.toLocaleString()}</span>
+                        <span className="text-muted-foreground">真实销售额</span>
+                        <span className="font-medium text-primary">
+                          ¥{Math.max(0, note.salesData.salesAmount - (note.fakeData?.fakeSalesAmount || 0)).toLocaleString()}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">销量</span>
-                        <span className="font-medium">{note.salesData.salesVolume}</span>
+                        <span className="text-muted-foreground">真实销量</span>
+                        <span className="font-medium text-green-600">
+                          {Math.max(0, note.salesData.salesVolume - (note.fakeData?.fakeSalesVolume || 0))}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">推广花费</span>
@@ -459,6 +536,20 @@ export function XiaohongshuNotes() {
                         </span>
                       </div>
                     </div>
+                    {/* 刷单数据 */}
+                    {((note.fakeData?.fakeSalesAmount || 0) + (note.fakeData?.fakeSalesVolume || 0) + (note.fakeData?.fakeViews || 0) + (note.fakeData?.fakeLikes || 0)) > 0 && (
+                      <div className="border-t border-border pt-2 mt-2">
+                        <p className="text-xs text-orange-600 font-medium mb-1">刷单数据</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          {(note.fakeData?.fakeViews || 0) > 0 && <span>浏览: {note.fakeData?.fakeViews}</span>}
+                          {(note.fakeData?.fakeLikes || 0) > 0 && <span>点赞: {note.fakeData?.fakeLikes}</span>}
+                          {(note.fakeData?.fakeComments || 0) > 0 && <span>评论: {note.fakeData?.fakeComments}</span>}
+                          {(note.fakeData?.fakeShares || 0) > 0 && <span>分享: {note.fakeData?.fakeShares}</span>}
+                          {(note.fakeData?.fakeSalesAmount || 0) > 0 && <span>刷单金额: ¥{note.fakeData?.fakeSalesAmount}</span>}
+                          {(note.fakeData?.fakeSalesVolume || 0) > 0 && <span>刷单销量: {note.fakeData?.fakeSalesVolume}</span>}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -665,6 +756,71 @@ export function XiaohongshuNotes() {
                       </span>
                     </div>
                   )}
+                </div>
+
+                {/* 刷单数据 */}
+                <div className="bg-orange-50 rounded-lg p-4 space-y-3 border border-orange-200">
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-orange-700">
+                    <span>⚠️</span>
+                    刷单数据（选填）
+                  </div>
+                  <p className="text-xs text-orange-600">填写刷单数据后，系统会自动从总数据中剔除，显示真实数据</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs font-medium mb-1 block text-orange-700">刷浏览量</label>
+                      <input
+                        type="number"
+                        value={formData.fakeViews}
+                        onChange={(e) => setFormData({ ...formData, fakeViews: parseInt(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 rounded-lg border border-orange-300 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block text-orange-700">刷点赞数</label>
+                      <input
+                        type="number"
+                        value={formData.fakeLikes}
+                        onChange={(e) => setFormData({ ...formData, fakeLikes: parseInt(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 rounded-lg border border-orange-300 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block text-orange-700">刷评论数</label>
+                      <input
+                        type="number"
+                        value={formData.fakeComments}
+                        onChange={(e) => setFormData({ ...formData, fakeComments: parseInt(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 rounded-lg border border-orange-300 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block text-orange-700">刷分享数</label>
+                      <input
+                        type="number"
+                        value={formData.fakeShares}
+                        onChange={(e) => setFormData({ ...formData, fakeShares: parseInt(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 rounded-lg border border-orange-300 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block text-orange-700">刷单金额 (¥)</label>
+                      <input
+                        type="number"
+                        value={formData.fakeSalesAmount}
+                        onChange={(e) => setFormData({ ...formData, fakeSalesAmount: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 rounded-lg border border-orange-300 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block text-orange-700">刷单销量</label>
+                      <input
+                        type="number"
+                        value={formData.fakeSalesVolume}
+                        onChange={(e) => setFormData({ ...formData, fakeSalesVolume: parseInt(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 rounded-lg border border-orange-300 bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                      />
+                    </div>
+                  </div>
                 </div>
               </>
             )}
