@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Edit2, ExternalLink, Eye, Heart, MessageCircle, Share2, Check, X, Copy, Image as ImageIcon, Package, FileText, DollarSign, TrendingUp } from 'lucide-react';
+import { Plus, Trash2, Edit2, ExternalLink, Eye, Heart, MessageCircle, Share2, Check, X, Copy, Image as ImageIcon, Package, FileText, DollarSign, TrendingUp, Users, Store, Settings } from 'lucide-react';
 
 interface NoteImage {
   id: string;
@@ -9,11 +9,26 @@ interface NoteImage {
   name: string;
 }
 
+interface XiaohongshuAccount {
+  id: string;
+  name: string;
+  platform: string;
+  avatar?: string;
+}
+
+interface XiaohongshuShop {
+  id: string;
+  name: string;
+  platform: string;
+}
+
 interface XiaohongshuNote {
   id: string;
   title: string;
   content: string;
   type: 'normal' | 'product'; // 普通笔记 / 商品笔记
+  accountId: string; // 关联账号ID
+  shopId: string; // 关联店铺ID（仅商品笔记）
   productLink: string;
   productName: string;
   images: NoteImage[];
@@ -45,13 +60,21 @@ interface XiaohongshuNote {
 
 export function XiaohongshuNotes() {
   const [notes, setNotes] = useState<XiaohongshuNote[]>([]);
+  const [accounts, setAccounts] = useState<XiaohongshuAccount[]>([]);
+  const [shops, setShops] = useState<XiaohongshuShop[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showShopModal, setShowShopModal] = useState(false);
   const [editingNote, setEditingNote] = useState<XiaohongshuNote | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'normal' | 'product'>('all');
+  const [filterAccountId, setFilterAccountId] = useState<string>('');
+  const [filterShopId, setFilterShopId] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     type: 'normal' as 'normal' | 'product',
+    accountId: '',
+    shopId: '',
     productLink: '',
     productName: '',
     publishDate: '',
@@ -70,6 +93,8 @@ export function XiaohongshuNotes() {
     fakeSalesVolume: 0,
     tags: '',
   });
+  const [accountForm, setAccountForm] = useState({ name: '', platform: '小红书' });
+  const [shopForm, setShopForm] = useState({ name: '', platform: '小红书' });
   const [newImages, setNewImages] = useState<NoteImage[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -78,17 +103,35 @@ export function XiaohongshuNotes() {
     if (stored) {
       setNotes(JSON.parse(stored));
     }
+    const storedAccounts = localStorage.getItem('xiaohongshu-accounts');
+    if (storedAccounts) {
+      setAccounts(JSON.parse(storedAccounts));
+    }
+    const storedShops = localStorage.getItem('xiaohongshu-shops');
+    if (storedShops) {
+      setShops(JSON.parse(storedShops));
+    }
   }, []);
 
   useEffect(() => {
     localStorage.setItem('xiaohongshu-notes', JSON.stringify(notes));
   }, [notes]);
 
+  useEffect(() => {
+    localStorage.setItem('xiaohongshu-accounts', JSON.stringify(accounts));
+  }, [accounts]);
+
+  useEffect(() => {
+    localStorage.setItem('xiaohongshu-shops', JSON.stringify(shops));
+  }, [shops]);
+
   const resetForm = () => {
     setFormData({
       title: '',
       content: '',
       type: 'normal',
+      accountId: accounts.length > 0 ? accounts[0].id : '',
+      shopId: '',
       productLink: '',
       productName: '',
       publishDate: '',
@@ -122,6 +165,8 @@ export function XiaohongshuNotes() {
       title: note.title,
       content: note.content,
       type: note.type,
+      accountId: note.accountId,
+      shopId: note.shopId || '',
       productLink: note.productLink,
       productName: note.productName,
       publishDate: note.publishDate,
@@ -177,6 +222,7 @@ export function XiaohongshuNotes() {
 
   const saveNote = () => {
     if (!formData.title.trim()) return;
+    if (!formData.accountId) return;
     
     const tags = formData.tags.split(',').map(t => t.trim()).filter(t => t);
     const salesData = formData.type === 'product' ? {
@@ -201,6 +247,8 @@ export function XiaohongshuNotes() {
         title: formData.title.trim(),
         content: formData.content.trim(),
         type: formData.type,
+        accountId: formData.accountId,
+        shopId: formData.type === 'product' ? formData.shopId : '',
         productLink: formData.type === 'product' ? formData.productLink.trim() : '',
         productName: formData.type === 'product' ? formData.productName.trim() : '',
         images: newImages,
@@ -221,6 +269,8 @@ export function XiaohongshuNotes() {
         title: formData.title.trim(),
         content: formData.content.trim(),
         type: formData.type,
+        accountId: formData.accountId,
+        shopId: formData.type === 'product' ? formData.shopId : '',
         productLink: formData.type === 'product' ? formData.productLink.trim() : '',
         productName: formData.type === 'product' ? formData.productName.trim() : '',
         images: newImages,
@@ -248,7 +298,8 @@ export function XiaohongshuNotes() {
   };
 
   const copyNoteInfo = (note: XiaohongshuNote) => {
-    let text = `标题：${note.title}\n内容：${note.content}`;
+    const account = accounts.find(a => a.id === note.accountId);
+    let text = `账号：${account?.name || '未知'}\n标题：${note.title}\n内容：${note.content}`;
     if (note.type === 'product') {
       text += `\n商品：${note.productName}\n链接：${note.productLink}`;
       if (note.salesData) {
@@ -263,7 +314,48 @@ export function XiaohongshuNotes() {
     navigator.clipboard.writeText(text);
   };
 
-  const filteredNotes = filterType === 'all' ? notes : notes.filter(n => n.type === filterType);
+  // 添加账号
+  const addAccount = () => {
+    if (!accountForm.name.trim()) return;
+    const newAccount: XiaohongshuAccount = {
+      id: Date.now().toString(),
+      name: accountForm.name.trim(),
+      platform: accountForm.platform,
+    };
+    setAccounts([...accounts, newAccount]);
+    setAccountForm({ name: '', platform: '小红书' });
+  };
+
+  // 删除账号
+  const deleteAccount = (id: string) => {
+    setAccounts(accounts.filter(a => a.id !== id));
+  };
+
+  // 添加店铺
+  const addShop = () => {
+    if (!shopForm.name.trim()) return;
+    const newShop: XiaohongshuShop = {
+      id: Date.now().toString(),
+      name: shopForm.name.trim(),
+      platform: shopForm.platform,
+    };
+    setShops([...shops, newShop]);
+    setShopForm({ name: '', platform: '小红书' });
+  };
+
+  // 删除店铺
+  const deleteShop = (id: string) => {
+    setShops(shops.filter(s => s.id !== id));
+  };
+
+  // 筛选笔记
+  const filteredNotes = notes.filter(note => {
+    if (filterType !== 'all' && note.type !== filterType) return false;
+    if (filterAccountId && note.accountId !== filterAccountId) return false;
+    if (filterShopId && note.shopId !== filterShopId) return false;
+    return true;
+  });
+
   const normalCount = notes.filter(n => n.type === 'normal').length;
   const productCount = notes.filter(n => n.type === 'product').length;
   
@@ -305,15 +397,31 @@ export function XiaohongshuNotes() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold mb-2">小红书笔记管理</h2>
-          <p className="text-muted-foreground text-sm">记录笔记内容、推广数据和商品销售</p>
+          <p className="text-muted-foreground text-sm">多账号多店铺管理，记录笔记内容、推广数据和商品销售</p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          添加笔记
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowAccountModal(true)}
+            className="px-3 py-2 rounded-lg border border-border hover:bg-secondary transition-all text-sm font-medium flex items-center gap-1.5"
+          >
+            <Users className="h-4 w-4" />
+            账号管理
+          </button>
+          <button
+            onClick={() => setShowShopModal(true)}
+            className="px-3 py-2 rounded-lg border border-border hover:bg-secondary transition-all text-sm font-medium flex items-center gap-1.5"
+          >
+            <Store className="h-4 w-4" />
+            店铺管理
+          </button>
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            添加笔记
+          </button>
+        </div>
       </div>
 
       {/* 数据统计 */}
@@ -323,12 +431,12 @@ export function XiaohongshuNotes() {
           <p className="text-xl font-bold mt-1">{notes.length}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-3">
-          <p className="text-xs text-muted-foreground">普通笔记</p>
-          <p className="text-xl font-bold mt-1">{normalCount}</p>
+          <p className="text-xs text-muted-foreground">账号数</p>
+          <p className="text-xl font-bold mt-1">{accounts.length}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-3">
-          <p className="text-xs text-muted-foreground">商品笔记</p>
-          <p className="text-xl font-bold mt-1">{productCount}</p>
+          <p className="text-xs text-muted-foreground">店铺数</p>
+          <p className="text-xl font-bold mt-1">{shops.length}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-3">
           <p className="text-xs text-muted-foreground">真实浏览量</p>
@@ -357,39 +465,65 @@ export function XiaohongshuNotes() {
       </div>
 
       {/* 筛选标签 */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setFilterType('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            filterType === 'all'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          全部 ({notes.length})
-        </button>
-        <button
-          onClick={() => setFilterType('normal')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-            filterType === 'normal'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <FileText className="h-4 w-4" />
-          普通笔记 ({normalCount})
-        </button>
-        <button
-          onClick={() => setFilterType('product')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-            filterType === 'product'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Package className="h-4 w-4" />
-          商品笔记 ({productCount})
-        </button>
+      <div className="space-y-3">
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setFilterType('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              filterType === 'all'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            全部 ({notes.length})
+          </button>
+          <button
+            onClick={() => setFilterType('normal')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+              filterType === 'normal'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <FileText className="h-4 w-4" />
+            普通笔记 ({normalCount})
+          </button>
+          <button
+            onClick={() => setFilterType('product')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+              filterType === 'product'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Package className="h-4 w-4" />
+            商品笔记 ({productCount})
+          </button>
+        </div>
+
+        {/* 账号和店铺筛选 */}
+        <div className="flex gap-2 flex-wrap">
+          <select
+            value={filterAccountId}
+            onChange={(e) => setFilterAccountId(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <option value="">全部账号</option>
+            {accounts.map(account => (
+              <option key={account.id} value={account.id}>{account.name}</option>
+            ))}
+          </select>
+          <select
+            value={filterShopId}
+            onChange={(e) => setFilterShopId(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <option value="">全部店铺</option>
+            {shops.map(shop => (
+              <option key={shop.id} value={shop.id}>{shop.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* 笔记列表 */}
@@ -401,12 +535,14 @@ export function XiaohongshuNotes() {
             const roi = note.salesData && note.salesData.promotionCost > 0
               ? (realSalesAmount / note.salesData.promotionCost).toFixed(2)
               : null;
+            const account = accounts.find(a => a.id === note.accountId);
+            const shop = shops.find(s => s.id === note.shopId);
             
             return (
               <div key={note.id} className="bg-card rounded-xl border border-border p-5 hover:shadow-sm transition-all">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                         note.type === 'product'
                           ? 'bg-primary/10 text-primary'
@@ -414,6 +550,18 @@ export function XiaohongshuNotes() {
                       }`}>
                         {note.type === 'product' ? '商品笔记' : '普通笔记'}
                       </span>
+                      {account && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-medium flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {account.name}
+                        </span>
+                      )}
+                      {shop && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-700 font-medium flex items-center gap-1">
+                          <Store className="h-3 w-3" />
+                          {shop.name}
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-semibold line-clamp-1">{note.title}</h3>
                   </div>
@@ -579,12 +727,162 @@ export function XiaohongshuNotes() {
         </div>
       )}
 
-      {/* 添加/编辑弹窗 */}
+      {/* 账号管理弹窗 */}
+      {showAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                账号管理
+              </h3>
+              <button
+                onClick={() => setShowAccountModal(false)}
+                className="p-1 rounded hover:bg-secondary"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* 添加账号 */}
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={accountForm.name}
+                onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })}
+                placeholder="账号名称"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <input
+                type="text"
+                value={accountForm.platform}
+                onChange={(e) => setAccountForm({ ...accountForm, platform: e.target.value })}
+                placeholder="平台（默认小红书）"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <button
+                onClick={addAccount}
+                className="w-full px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center justify-center gap-1.5"
+              >
+                <Plus className="h-4 w-4" />
+                添加账号
+              </button>
+            </div>
+
+            {/* 账号列表 */}
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {accounts.map(account => (
+                <div key={account.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                  <div>
+                    <p className="font-medium text-sm">{account.name}</p>
+                    <p className="text-xs text-muted-foreground">{account.platform}</p>
+                  </div>
+                  <button
+                    onClick={() => deleteAccount(account.id)}
+                    className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              {accounts.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-4">暂无账号，请先添加</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 店铺管理弹窗 */}
+      {showShopModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Store className="h-5 w-5" />
+                店铺管理
+              </h3>
+              <button
+                onClick={() => setShowShopModal(false)}
+                className="p-1 rounded hover:bg-secondary"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* 添加店铺 */}
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={shopForm.name}
+                onChange={(e) => setShopForm({ ...shopForm, name: e.target.value })}
+                placeholder="店铺名称"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <input
+                type="text"
+                value={shopForm.platform}
+                onChange={(e) => setShopForm({ ...shopForm, platform: e.target.value })}
+                placeholder="平台（默认小红书）"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <button
+                onClick={addShop}
+                className="w-full px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center justify-center gap-1.5"
+              >
+                <Plus className="h-4 w-4" />
+                添加店铺
+              </button>
+            </div>
+
+            {/* 店铺列表 */}
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {shops.map(shop => (
+                <div key={shop.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                  <div>
+                    <p className="font-medium text-sm">{shop.name}</p>
+                    <p className="text-xs text-muted-foreground">{shop.platform}</p>
+                  </div>
+                  <button
+                    onClick={() => deleteShop(shop.id)}
+                    className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              {shops.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-4">暂无店铺，请先添加</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 添加/编辑笔记弹窗 */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
           <div className="bg-card rounded-xl border border-border p-6 w-full max-w-lg space-y-4 my-8">
             <h3 className="text-lg font-semibold">{editingNote ? '编辑笔记' : '添加笔记'}</h3>
             
+            {/* 选择账号 */}
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">选择账号 *</label>
+              <select
+                value={formData.accountId}
+                onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <option value="">请选择账号</option>
+                {accounts.map(account => (
+                  <option key={account.id} value={account.id}>{account.name} ({account.platform})</option>
+                ))}
+              </select>
+              {accounts.length === 0 && (
+                <p className="text-xs text-orange-600 mt-1">请先添加账号</p>
+              )}
+            </div>
+
             {/* 笔记类型选择 */}
             <div>
               <label className="text-sm font-medium mb-1.5 block">笔记类型 *</label>
@@ -681,6 +979,21 @@ export function XiaohongshuNotes() {
             {/* 商品信息（仅商品笔记显示） */}
             {formData.type === 'product' && (
               <>
+                {/* 选择店铺 */}
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">关联店铺</label>
+                  <select
+                    value={formData.shopId}
+                    onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <option value="">请选择店铺（可选）</option>
+                    {shops.map(shop => (
+                      <option key={shop.id} value={shop.id}>{shop.name} ({shop.platform})</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">商品名称</label>
