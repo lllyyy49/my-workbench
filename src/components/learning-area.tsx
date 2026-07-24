@@ -16,6 +16,7 @@ interface LearningTask {
   id: string;
   title: string;
   completed: boolean;
+  completedAt?: number; // 任务完成时间
 }
 
 // 学习阶段
@@ -184,7 +185,11 @@ export function LearningArea() {
       ...r,
       stages: r.stages.map(s => s.id === stageId ? {
         ...s,
-        tasks: s.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t),
+        tasks: s.tasks.map(t => t.id === taskId ? {
+          ...t,
+          completed: !t.completed,
+          completedAt: !t.completed ? Date.now() : undefined,
+        } : t),
       } : s),
     } : r));
   };
@@ -232,6 +237,31 @@ export function LearningArea() {
   const totalTasks = resources.reduce((sum, r) => sum + r.stages.reduce((s, st) => s + st.tasks.length, 0), 0);
   const completedTasks = resources.reduce((sum, r) => sum + r.stages.reduce((s, st) => s + st.tasks.filter(t => t.completed).length, 0), 0);
 
+  // 计算今日学习数据
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayStartTimestamp = todayStart.getTime();
+
+  const todayCompletedTasks = resources.reduce((sum, r) =>
+    sum + r.stages.reduce((s, st) =>
+      s + st.tasks.filter(t => t.completed && t.completedAt && t.completedAt >= todayStartTimestamp).length
+    , 0)
+  , 0);
+
+  const todayNewStages = resources.reduce((sum, r) =>
+    sum + r.stages.filter(s => {
+      // 使用阶段中最早的任务创建时间作为阶段创建时间
+      if (s.tasks.length === 0) return false;
+      const earliestTask = s.tasks.reduce((earliest, t) => {
+        const taskId = parseInt(t.id);
+        return taskId < earliest ? taskId : earliest;
+      }, Infinity);
+      return earliestTask >= todayStartTimestamp;
+    }).length
+  , 0);
+
+  const todayNewResources = resources.filter(r => r.createdAt >= todayStartTimestamp).length;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -277,6 +307,40 @@ export function LearningArea() {
           <p className="text-sm text-muted-foreground">总体进度</p>
           <p className="text-2xl font-bold mt-1">{totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%</p>
         </div>
+      </div>
+
+      {/* 今日学习统计 */}
+      <div className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 rounded-xl border border-teal-200 dark:border-teal-800 p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center">
+            <span className="text-lg">📅</span>
+          </div>
+          <h3 className="font-semibold text-lg">今日学习</h3>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center">
+            <p className="text-3xl font-bold text-teal-600 dark:text-teal-400">{todayCompletedTasks}</p>
+            <p className="text-sm text-muted-foreground mt-1">完成任务</p>
+          </div>
+          <div className="text-center">
+            <p className="text-3xl font-bold text-teal-600 dark:text-teal-400">{todayNewStages}</p>
+            <p className="text-sm text-muted-foreground mt-1">新增阶段</p>
+          </div>
+          <div className="text-center">
+            <p className="text-3xl font-bold text-teal-600 dark:text-teal-400">{todayNewResources}</p>
+            <p className="text-sm text-muted-foreground mt-1">新增资源</p>
+          </div>
+        </div>
+        {todayCompletedTasks > 0 && (
+          <div className="mt-4 pt-4 border-t border-teal-200 dark:border-teal-800">
+            <p className="text-sm text-muted-foreground text-center">
+              {todayCompletedTasks >= 5 ? '🎉 今天学习很充实！继续保持！' :
+               todayCompletedTasks >= 3 ? '👍 不错的进度，继续加油！' :
+               todayCompletedTasks >= 1 ? '💪 好的开始，继续努力！' :
+               '🌟 新的一天，开始学习吧！'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 分类标签 */}
