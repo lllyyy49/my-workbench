@@ -148,7 +148,15 @@ export function DailyWorkLog() {
 
       {/* 日期选择 */}
       <div className="bg-card rounded-xl border border-border p-4">
-        <h3 className="text-sm font-medium text-muted-foreground mb-3">选择日期</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-muted-foreground">选择日期</h3>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        </div>
         <div className="flex gap-2 overflow-x-auto pb-2">
           {getRecentDates().map(date => {
             const log = logs.find(l => l.date === date);
