@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, ListTodo, Calendar, FileText, TrendingUp, BookOpen, MessageSquare, ClipboardList } from 'lucide-react';
+import { CheckCircle2, ListTodo, Calendar, FileText, TrendingUp, BookOpen, MessageSquare, ClipboardList, Sparkles, Target, Zap } from 'lucide-react';
 
 interface Todo {
   id: string;
@@ -75,15 +75,15 @@ export function Dashboard() {
   if (!mounted) {
     return (
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-semibold mb-2">工作台</h2>
-          <p className="text-muted-foreground text-sm">欢迎回来，李月</p>
+        <div className="gradient-teal rounded-2xl p-8 text-white">
+          <div className="h-8 bg-white/20 rounded w-1/3 mb-3 animate-pulse"></div>
+          <div className="h-4 bg-white/20 rounded w-1/2 animate-pulse"></div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-            <div key={i} className="bg-card rounded-xl border border-border p-5 animate-pulse">
-              <div className="h-4 bg-secondary rounded w-1/2 mb-3"></div>
-              <div className="h-8 bg-secondary rounded w-1/3"></div>
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse">
+              <div className="h-4 bg-gray-100 rounded w-1/2 mb-3"></div>
+              <div className="h-8 bg-gray-100 rounded w-1/3"></div>
             </div>
           ))}
         </div>
@@ -131,160 +131,195 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* 欢迎区域 */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-1">{greeting()}，李月</h2>
-        <p className="text-muted-foreground text-sm">{dateStr}</p>
+      {/* 欢迎区域 - 渐变卡片 */}
+      <div className="gradient-teal rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5" />
+            <span className="text-sm font-medium opacity-90">今日状态</span>
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">{greeting()}，李月</h2>
+          <p className="text-white/80 text-sm md:text-base">{dateStr}</p>
+          {completionRate === 100 && totalTodos > 0 && (
+            <div className="mt-4 inline-flex items-center gap-2 bg-white/20 rounded-full px-4 py-2 text-sm">
+              <Zap className="h-4 w-4" />
+              <span>太棒了！所有任务已完成</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 今日工作概览 */}
-      <div className="bg-card rounded-xl border border-border p-6">
-        <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-primary" />
+      <div className="card-enhanced p-6">
+        <h3 className="font-semibold mb-4 flex items-center gap-2 text-gray-800">
+          <div className="p-2 rounded-lg gradient-teal-light">
+            <ClipboardList className="h-5 w-5 text-teal-600" />
+          </div>
           今日工作概览
         </h3>
         {todayWorkLog ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">工作进度</span>
-              <span className="font-medium">{todayCompletedWork}/{todayWorkItems.length} 项完成</span>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">工作进度</span>
+              <span className="font-bold text-teal-600">{todayCompletedWork}/{todayWorkItems.length} 项完成</span>
             </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary rounded-full transition-all duration-500"
+                className="h-full gradient-teal rounded-full transition-all duration-700 ease-out"
                 style={{ width: `${todayWorkItems.length > 0 ? (todayCompletedWork / todayWorkItems.length) * 100 : 0}%` }}
               />
             </div>
             {todayWorkLog.summary && (
-              <div className="pt-2 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-1">今日复盘</p>
-                <p className="text-sm">{todayWorkLog.summary}</p>
+              <div className="pt-4 border-t border-gray-100">
+                <p className="text-xs text-gray-400 mb-2 flex items-center gap-1">
+                  <Target className="h-3 w-3" />
+                  今日复盘
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">{todayWorkLog.summary}</p>
               </div>
             )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">今日暂无工作日志，去记录一下吧</p>
+          <div className="text-center py-6">
+            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-50 flex items-center justify-center">
+              <ClipboardList className="h-8 w-8 text-gray-300" />
+            </div>
+            <p className="text-sm text-gray-400">今日暂无工作日志</p>
+            <p className="text-xs text-gray-300 mt-1">去记录一下今天的工作吧</p>
+          </div>
         )}
       </div>
 
       {/* 统计卡片 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card rounded-xl border border-border p-5 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
+        <div className="card-enhanced p-5 group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 rounded-xl gradient-teal-light group-hover:scale-110 transition-transform duration-300">
+              <CheckCircle2 className="h-5 w-5 text-teal-600" />
             </div>
-            <span className="text-sm text-muted-foreground">待办完成率</span>
+            <span className="text-sm text-gray-500 font-medium">待办完成率</span>
           </div>
-          <p className="text-3xl font-bold">{completionRate}%</p>
-          <p className="text-xs text-muted-foreground mt-1">{completedTodos}/{totalTodos} 项</p>
+          <p className="text-3xl font-bold text-gray-800">{completionRate}<span className="text-lg text-gray-400">%</span></p>
+          <p className="text-xs text-gray-400 mt-2">{completedTodos}/{totalTodos} 项已完成</p>
         </div>
 
-        <div className="bg-card rounded-xl border border-border p-5 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <BookOpen className="h-5 w-5 text-blue-600" />
+        <div className="card-enhanced p-5 group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-rose-50 to-rose-100 group-hover:scale-110 transition-transform duration-300">
+              <BookOpen className="h-5 w-5 text-rose-500" />
             </div>
-            <span className="text-sm text-muted-foreground">小红书笔记</span>
+            <span className="text-sm text-gray-500 font-medium">小红书笔记</span>
           </div>
-          <p className="text-3xl font-bold">{totalXhsNotes}</p>
-          <p className="text-xs text-muted-foreground mt-1">浏览 {totalViews.toLocaleString()}</p>
+          <p className="text-3xl font-bold text-gray-800">{totalXhsNotes}</p>
+          <p className="text-xs text-gray-400 mt-2">浏览 {totalViews.toLocaleString()}</p>
         </div>
 
-        <div className="bg-card rounded-xl border border-border p-5 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-lg bg-green-500/10">
-              <MessageSquare className="h-5 w-5 text-green-600" />
+        <div className="card-enhanced p-5 group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 group-hover:scale-110 transition-transform duration-300">
+              <MessageSquare className="h-5 w-5 text-emerald-500" />
             </div>
-            <span className="text-sm text-muted-foreground">评价模板</span>
+            <span className="text-sm text-gray-500 font-medium">评价模板</span>
           </div>
-          <p className="text-3xl font-bold">{totalReviews}</p>
-          <p className="text-xs text-muted-foreground mt-1">使用 {totalReviewUsage} 次</p>
+          <p className="text-3xl font-bold text-gray-800">{totalReviews}</p>
+          <p className="text-xs text-gray-400 mt-2">使用 {totalReviewUsage} 次</p>
         </div>
 
-        <div className="bg-card rounded-xl border border-border p-5 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <Calendar className="h-5 w-5 text-purple-600" />
+        <div className="card-enhanced p-5 group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-50 to-violet-100 group-hover:scale-110 transition-transform duration-300">
+              <Calendar className="h-5 w-5 text-violet-500" />
             </div>
-            <span className="text-sm text-muted-foreground">今日日程</span>
+            <span className="text-sm text-gray-500 font-medium">今日日程</span>
           </div>
-          <p className="text-3xl font-bold">{todayEvents.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">场安排</p>
+          <p className="text-3xl font-bold text-gray-800">{todayEvents.length}</p>
+          <p className="text-xs text-gray-400 mt-2">场安排</p>
         </div>
       </div>
 
       {/* 详细统计 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 待办事项 */}
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <ListTodo className="h-5 w-5 text-muted-foreground" />
+        <div className="card-enhanced p-6">
+          <h3 className="font-semibold mb-5 flex items-center gap-2 text-gray-800">
+            <div className="p-2 rounded-lg bg-teal-50">
+              <ListTodo className="h-5 w-5 text-teal-600" />
+            </div>
             待办事项
           </h3>
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{totalTodos}</p>
-              <p className="text-xs text-muted-foreground">总任务</p>
+            <div className="text-center p-3 rounded-xl bg-gray-50">
+              <p className="text-2xl font-bold text-gray-700">{totalTodos}</p>
+              <p className="text-xs text-gray-400 mt-1">总任务</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{completedTodos}</p>
-              <p className="text-xs text-muted-foreground">已完成</p>
+            <div className="text-center p-3 rounded-xl bg-emerald-50">
+              <p className="text-2xl font-bold text-emerald-600">{completedTodos}</p>
+              <p className="text-xs text-gray-400 mt-1">已完成</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{pendingTodos}</p>
-              <p className="text-xs text-muted-foreground">待完成</p>
+            <div className="text-center p-3 rounded-xl bg-teal-50">
+              <p className="text-2xl font-bold text-teal-600">{pendingTodos}</p>
+              <p className="text-xs text-gray-400 mt-1">待完成</p>
             </div>
           </div>
         </div>
 
         {/* 小红书数据 */}
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-muted-foreground" />
+        <div className="card-enhanced p-6">
+          <h3 className="font-semibold mb-5 flex items-center gap-2 text-gray-800">
+            <div className="p-2 rounded-lg bg-rose-50">
+              <TrendingUp className="h-5 w-5 text-rose-500" />
+            </div>
             小红书数据
           </h3>
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{totalViews.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">总浏览</p>
+            <div className="text-center p-3 rounded-xl bg-rose-50">
+              <p className="text-2xl font-bold text-rose-600">{totalViews.toLocaleString()}</p>
+              <p className="text-xs text-gray-400 mt-1">总浏览</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{totalLikes.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">总点赞</p>
+            <div className="text-center p-3 rounded-xl bg-pink-50">
+              <p className="text-2xl font-bold text-pink-500">{totalLikes.toLocaleString()}</p>
+              <p className="text-xs text-gray-400 mt-1">总点赞</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{totalXhsNotes}</p>
-              <p className="text-xs text-muted-foreground">笔记数</p>
+            <div className="text-center p-3 rounded-xl bg-orange-50">
+              <p className="text-2xl font-bold text-orange-500">{totalXhsNotes}</p>
+              <p className="text-xs text-gray-400 mt-1">笔记数</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* 待完成事项 */}
-      <div className="bg-card rounded-xl border border-border p-6">
-        <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+      <div className="card-enhanced p-6">
+        <h3 className="font-semibold mb-4 flex items-center gap-2 text-gray-800">
+          <div className="p-2 rounded-lg bg-amber-50">
+            <CheckCircle2 className="h-5 w-5 text-amber-500" />
+          </div>
           待完成事项
         </h3>
         {todos.filter(t => !t.completed).length > 0 ? (
           <div className="space-y-2">
             {todos.filter(t => !t.completed).slice(0, 5).map(todo => (
-              <div key={todo.id} className="flex items-center gap-3 p-2 rounded-lg">
-                <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-sm truncate">{todo.text}</span>
+              <div key={todo.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-teal-50 transition-colors duration-200">
+                <div className="w-2 h-2 rounded-full gradient-teal flex-shrink-0" />
+                <span className="text-sm text-gray-600 truncate">{todo.text}</span>
               </div>
             ))}
             {todos.filter(t => !t.completed).length > 5 && (
-              <p className="text-xs text-muted-foreground pt-1">
+              <p className="text-xs text-gray-400 pt-2 pl-3">
                 还有 {todos.filter(t => !t.completed).length - 5} 项...
               </p>
             )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            所有任务已完成！
-          </p>
+          <div className="text-center py-8">
+            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-emerald-50 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            </div>
+            <p className="text-sm text-gray-500 font-medium">所有任务已完成！</p>
+            <p className="text-xs text-gray-400 mt-1">太棒了，继续保持</p>
+          </div>
         )}
       </div>
     </div>
