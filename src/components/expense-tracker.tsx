@@ -48,7 +48,7 @@ interface Category {
 }
 
 const defaultCategories: Category[] = [
-  { id: '1', name: '食品', icon: '🍜', color: '#F59E0B' },
+  { id: '1', name: '食品', icon: '🍜', color: '#14B8A6' },
   { id: '2', name: '交通', icon: '🚗', color: '#3B82F6' },
   { id: '3', name: '购物', icon: '🛍️', color: '#EC4899' },
   { id: '4', name: '娱乐', icon: '🎮', color: '#8B5CF6' },
@@ -58,7 +58,7 @@ const defaultCategories: Category[] = [
   { id: '8', name: '其他', icon: '📦', color: '#6B7280' },
 ];
 
-const COLORS = ['#F59E0B', '#3B82F6', '#EC4899', '#8B5CF6', '#10B981', '#06B6D4', '#F97316', '#6B7280'];
+const COLORS = ['#14B8A6', '#3B82F6', '#EC4899', '#8B5CF6', '#10B981', '#06B6D4', '#F97316', '#6B7280'];
 
 export function ExpenseTracker() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -254,14 +254,14 @@ export function ExpenseTracker() {
 
       {/* 统计卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200">
+        <Card className="bg-gradient-to-br from-teal-50 to-teal-100/50 border-teal-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-amber-700">本月支出</span>
-              <DollarSign className="w-5 h-5 text-amber-600" />
+              <span className="text-sm text-teal-700">本月支出</span>
+              <DollarSign className="w-5 h-5 text-teal-600" />
             </div>
-            <div className="text-3xl font-bold text-amber-900">¥{totalAmount.toFixed(2)}</div>
-            <p className="text-xs text-amber-600 mt-1">{monthExpenses.length} 笔记录</p>
+            <div className="text-3xl font-bold text-teal-900">¥{totalAmount.toFixed(2)}</div>
+            <p className="text-xs text-teal-600 mt-1">{monthExpenses.length} 笔记录</p>
           </CardContent>
         </Card>
 
@@ -316,7 +316,7 @@ export function ExpenseTracker() {
                   }}
                   formatter={(value: number) => [`¥${value.toFixed(2)}`, '金额']}
                 />
-                <Line type="monotone" dataKey="金额" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="金额" stroke="#14B8A6" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -407,7 +407,7 @@ export function ExpenseTracker() {
             <CardTitle className="text-base">消费记录</CardTitle>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="bg-amber-500 hover:bg-amber-600">
+                <Button size="sm" className="bg-teal-500 hover:bg-teal-600">
                   <Plus className="w-4 h-4 mr-1" />
                   记一笔
                 </Button>
@@ -464,7 +464,7 @@ export function ExpenseTracker() {
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     />
                   </div>
-                  <Button onClick={handleAddExpense} className="w-full bg-amber-500 hover:bg-amber-600">
+                  <Button onClick={handleAddExpense} className="w-full bg-teal-500 hover:bg-teal-600">
                     添加记录
                   </Button>
                 </div>
@@ -601,7 +601,7 @@ export function ExpenseTracker() {
               <Button variant="outline" className="flex-1" onClick={() => setEditingExpense(null)}>
                 取消
               </Button>
-              <Button className="flex-1 bg-amber-500 hover:bg-amber-600" onClick={handleSaveEdit}>
+              <Button className="flex-1 bg-teal-500 hover:bg-teal-600" onClick={handleSaveEdit}>
                 保存
               </Button>
             </div>

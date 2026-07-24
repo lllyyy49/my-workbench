@@ -12,7 +12,7 @@ interface CalendarEvent {
 }
 
 const EVENT_COLORS = [
-  '#F59E0B', // amber
+  '#14B8A6', // teal
   '#10B981', // green
   '#3B82F6', // blue
   '#8B5CF6', // purple

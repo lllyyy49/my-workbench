@@ -297,9 +297,9 @@ export function ReviewTemplates() {
 
             {/* 重复警告 */}
             {duplicateWarning && (
-              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-amber-800 whitespace-pre-line">{duplicateWarning}</div>
+              <div className="p-3 rounded-lg bg-teal-50 border border-teal-200 flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-teal-800 whitespace-pre-line">{duplicateWarning}</div>
               </div>
             )}
 

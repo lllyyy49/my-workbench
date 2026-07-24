@@ -68,7 +68,7 @@ interface Note {
   updatedAt: number;
 }
 
-const COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#EF4444'];
+const COLORS = ['#14B8A6', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#EF4444'];
 
 export function DataAnalysis() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -340,7 +340,7 @@ export function DataAnalysis() {
               <YAxis stroke="#6B7280" fontSize={12} />
               <Tooltip />
               <Legend />
-              <Area type="monotone" dataKey="完成" stackId="1" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.6} />
+              <Area type="monotone" dataKey="完成" stackId="1" stroke="#14B8A6" fill="#14B8A6" fillOpacity={0.6} />
               <Area type="monotone" dataKey="总数" stackId="2" stroke="#E5E7EB" fill="#E5E7EB" fillOpacity={0.3} />
             </AreaChart>
           </ResponsiveContainer>
@@ -382,7 +382,7 @@ export function DataAnalysis() {
                   dataKey="value"
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                 >
-                  <Cell fill="#F59E0B" />
+                  <Cell fill="#14B8A6" />
                   <Cell fill="#10B981" />
                 </Pie>
                 <Tooltip />
@@ -459,7 +459,7 @@ export function DataAnalysis() {
                 <XAxis dataKey="name" stroke="#6B7280" fontSize={12} />
                 <YAxis stroke="#6B7280" fontSize={12} />
                 <Tooltip />
-                <Bar dataKey="value" fill="#F59E0B" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="value" fill="#14B8A6" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

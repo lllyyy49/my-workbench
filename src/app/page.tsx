@@ -12,6 +12,7 @@ import { ExpenseTracker } from '@/components/expense-tracker';
 import { TodoList } from '@/components/todo-list';
 import { CalendarView } from '@/components/calendar-view';
 import { QuickNotes } from '@/components/quick-notes';
+import { DailyQuote } from '@/components/daily-quote';
 
 type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'expense' | 'todos' | 'calendar' | 'notes';
 
@@ -21,7 +22,12 @@ export default function Home() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return (
+          <div className="space-y-6">
+            <DailyQuote />
+            <Dashboard />
+          </div>
+        );
       case 'worklog':
         return <DailyWorkLog />;
       case 'xiaohongshu':

@@ -45,7 +45,7 @@ const DEFAULT_CATEGORIES: LearningCategory[] = [
   { id: '1', name: '英语', icon: '📚', color: '#3B82F6' },
   { id: '2', name: '视频剪辑', icon: '🎬', color: '#8B5CF6' },
   { id: '3', name: 'AI学习', icon: '🤖', color: '#10B981' },
-  { id: '4', name: '数据分析', icon: '📊', color: '#F59E0B' },
+  { id: '4', name: '数据分析', icon: '📊', color: '#14B8A6' },
 ];
 
 export function LearningArea() {
