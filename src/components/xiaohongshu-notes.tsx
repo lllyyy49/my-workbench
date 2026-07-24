@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Edit2, ExternalLink, Eye, Heart, MessageCircle, Share2, Check, X, Copy, Image as ImageIcon, Package, FileText, DollarSign, TrendingUp, Users, Store, Settings } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Plus, Trash2, Edit2, ExternalLink, Eye, Heart, MessageCircle, Share2, Check, X, Copy, Image as ImageIcon, Package, FileText, DollarSign, TrendingUp, Users, Store, Settings, BarChart3, Calendar, Upload, Clipboard } from 'lucide-react';
 
 interface NoteImage {
   id: string;
@@ -96,6 +96,9 @@ export function XiaohongshuNotes() {
   const [accountForm, setAccountForm] = useState({ name: '', platform: '小红书' });
   const [shopForm, setShopForm] = useState({ name: '', platform: '小红书' });
   const [newImages, setNewImages] = useState<NoteImage[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [analysisPeriod, setAnalysisPeriod] = useState<'week' | 'month' | 'all'>('week');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -215,6 +218,80 @@ export function XiaohongshuNotes() {
       fileInputRef.current.value = '';
     }
   };
+
+  // 拖拽上传处理
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (!files.length) return;
+
+    const images: NoteImage[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+
+      const dataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      images.push({
+        id: Date.now().toString() + i,
+        dataUrl,
+        name: file.name,
+      });
+    }
+
+    if (images.length > 0) {
+      setNewImages([...newImages, ...images]);
+    }
+  }, [newImages]);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  // 粘贴上传处理
+  const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData.items;
+    const images: NoteImage[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (!file) continue;
+
+        const dataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(file);
+        });
+
+        images.push({
+          id: Date.now().toString() + i,
+          dataUrl,
+          name: `pasted-image-${Date.now()}.png`,
+        });
+      }
+    }
+
+    if (images.length > 0) {
+      setNewImages([...newImages, ...images]);
+    }
+  }, [newImages]);
 
   const removeImage = (imageId: string) => {
     setNewImages(newImages.filter(img => img.id !== imageId));
@@ -392,6 +469,91 @@ export function XiaohongshuNotes() {
   const totalFakeSalesAmount = notes.reduce((sum, n) => sum + (n.fakeData?.fakeSalesAmount || 0), 0);
   const totalFakeSalesVolume = notes.reduce((sum, n) => sum + (n.fakeData?.fakeSalesVolume || 0), 0);
 
+  // 周度/月度汇总计算
+  const getPeriodStats = (period: 'week' | 'month' | 'all') => {
+    const now = Date.now();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+    
+    let filteredNotes = notes;
+    if (period === 'week') {
+      filteredNotes = notes.filter(n => n.createdAt >= weekAgo);
+    } else if (period === 'month') {
+      filteredNotes = notes.filter(n => n.createdAt >= monthAgo);
+    }
+    
+    const periodViews = filteredNotes.reduce((sum, n) => {
+      const fakeViews = n.fakeData?.fakeViews || 0;
+      return sum + Math.max(0, n.stats.views - fakeViews);
+    }, 0);
+    
+    const periodLikes = filteredNotes.reduce((sum, n) => {
+      const fakeLikes = n.fakeData?.fakeLikes || 0;
+      return sum + Math.max(0, n.stats.likes - fakeLikes);
+    }, 0);
+    
+    const periodComments = filteredNotes.reduce((sum, n) => {
+      const fakeComments = n.fakeData?.fakeComments || 0;
+      return sum + Math.max(0, n.stats.comments - fakeComments);
+    }, 0);
+    
+    const periodShares = filteredNotes.reduce((sum, n) => {
+      const fakeShares = n.fakeData?.fakeShares || 0;
+      return sum + Math.max(0, n.stats.shares - fakeShares);
+    }, 0);
+    
+    const periodProductNotes = filteredNotes.filter(n => n.type === 'product' && n.salesData);
+    const periodSalesAmount = periodProductNotes.reduce((sum, n) => {
+      const fakeSales = n.fakeData?.fakeSalesAmount || 0;
+      return sum + Math.max(0, (n.salesData?.salesAmount || 0) - fakeSales);
+    }, 0);
+    
+    const periodSalesVolume = periodProductNotes.reduce((sum, n) => {
+      const fakeSalesVol = n.fakeData?.fakeSalesVolume || 0;
+      return sum + Math.max(0, (n.salesData?.salesVolume || 0) - fakeSalesVol);
+    }, 0);
+    
+    const periodPromotionCost = periodProductNotes.reduce((sum, n) => sum + (n.salesData?.promotionCost || 0), 0);
+    const periodROI = periodPromotionCost > 0 ? (periodSalesAmount / periodPromotionCost).toFixed(2) : '0.00';
+    
+    return {
+      noteCount: filteredNotes.length,
+      views: periodViews,
+      likes: periodLikes,
+      comments: periodComments,
+      shares: periodShares,
+      salesAmount: periodSalesAmount,
+      salesVolume: periodSalesVolume,
+      promotionCost: periodPromotionCost,
+      roi: periodROI,
+    };
+  };
+
+  // 每日数据趋势（近7天）
+  const getDailyTrend = () => {
+    const now = Date.now();
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = new Date();
+      dayStart.setHours(0, 0, 0, 0);
+      dayStart.setDate(dayStart.getDate() - i);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      
+      const dayNotes = notes.filter(n => n.createdAt >= dayStart.getTime() && n.createdAt < dayEnd.getTime());
+      const dayViews = dayNotes.reduce((sum, n) => sum + Math.max(0, n.stats.views - (n.fakeData?.fakeViews || 0)), 0);
+      const dayLikes = dayNotes.reduce((sum, n) => sum + Math.max(0, n.stats.likes - (n.fakeData?.fakeLikes || 0)), 0);
+      
+      days.push({
+        date: `${dayStart.getMonth() + 1}/${dayStart.getDate()}`,
+        notes: dayNotes.length,
+        views: dayViews,
+        likes: dayLikes,
+      });
+    }
+    return days;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -400,6 +562,15 @@ export function XiaohongshuNotes() {
           <p className="text-muted-foreground text-sm">多账号多店铺管理，记录笔记内容、推广数据和商品销售</p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowAnalysis(!showAnalysis)}
+            className={`px-3 py-2 rounded-lg border hover:bg-secondary transition-all text-sm font-medium flex items-center gap-1.5 ${
+              showAnalysis ? 'bg-primary/10 border-primary text-primary' : 'border-border'
+            }`}
+          >
+            <BarChart3 className="h-4 w-4" />
+            数据分析
+          </button>
           <button
             onClick={() => setShowAccountModal(true)}
             className="px-3 py-2 rounded-lg border border-border hover:bg-secondary transition-all text-sm font-medium flex items-center gap-1.5"
@@ -423,6 +594,114 @@ export function XiaohongshuNotes() {
           </button>
         </div>
       </div>
+
+      {/* 数据分析视图 */}
+      {showAnalysis && (
+        <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/20 p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              小红书数据分析
+            </h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAnalysisPeriod('week')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  analysisPeriod === 'week' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                本周
+              </button>
+              <button
+                onClick={() => setAnalysisPeriod('month')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  analysisPeriod === 'month' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                本月
+              </button>
+              <button
+                onClick={() => setAnalysisPeriod('all')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  analysisPeriod === 'all' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                全部
+              </button>
+            </div>
+          </div>
+
+          {/* 周期统计 */}
+          {(() => {
+            const stats = getPeriodStats(analysisPeriod);
+            const periodLabel = analysisPeriod === 'week' ? '本周' : analysisPeriod === 'month' ? '本月' : '全部';
+            return (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                  <div className="bg-white/80 rounded-xl p-3 border border-primary/10">
+                    <p className="text-xs text-muted-foreground">{periodLabel}笔记</p>
+                    <p className="text-xl font-bold mt-1 text-primary">{stats.noteCount}</p>
+                  </div>
+                  <div className="bg-white/80 rounded-xl p-3 border border-primary/10">
+                    <p className="text-xs text-muted-foreground">真实浏览</p>
+                    <p className="text-xl font-bold mt-1 text-green-600">{stats.views.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white/80 rounded-xl p-3 border border-primary/10">
+                    <p className="text-xs text-muted-foreground">真实点赞</p>
+                    <p className="text-xl font-bold mt-1 text-green-600">{stats.likes.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white/80 rounded-xl p-3 border border-primary/10">
+                    <p className="text-xs text-muted-foreground">评论</p>
+                    <p className="text-xl font-bold mt-1">{stats.comments.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white/80 rounded-xl p-3 border border-primary/10">
+                    <p className="text-xs text-muted-foreground">分享</p>
+                    <p className="text-xl font-bold mt-1">{stats.shares.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white/80 rounded-xl p-3 border border-primary/10">
+                    <p className="text-xs text-muted-foreground">销售额</p>
+                    <p className="text-xl font-bold mt-1 text-primary">¥{stats.salesAmount.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white/80 rounded-xl p-3 border border-primary/10">
+                    <p className="text-xs text-muted-foreground">销量</p>
+                    <p className="text-xl font-bold mt-1 text-green-600">{stats.salesVolume}</p>
+                  </div>
+                  <div className="bg-white/80 rounded-xl p-3 border border-primary/10">
+                    <p className="text-xs text-muted-foreground">ROI</p>
+                    <p className={`text-xl font-bold mt-1 ${parseFloat(stats.roi) >= 1 ? 'text-green-600' : 'text-orange-600'}`}>{stats.roi}</p>
+                  </div>
+                </div>
+
+                {/* 每日趋势 */}
+                <div className="bg-white/80 rounded-xl p-4 border border-primary/10">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    近7天趋势
+                  </h4>
+                  <div className="flex items-end gap-2 h-32">
+                    {getDailyTrend().map((day, i) => {
+                      const maxViews = Math.max(...getDailyTrend().map(d => d.views), 1);
+                      const height = (day.views / maxViews) * 100;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <div className="w-full flex flex-col items-center gap-1 flex-1 justify-end">
+                            <span className="text-xs text-muted-foreground">{day.views > 0 ? day.views : ''}</span>
+                            <div
+                              className="w-full bg-gradient-to-t from-primary/60 to-primary/30 rounded-t-sm min-h-[4px] transition-all"
+                              style={{ height: `${Math.max(height, 4)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground">{day.date}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
 
       {/* 数据统计 */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -927,11 +1206,12 @@ export function XiaohongshuNotes() {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-1.5 block">内容</label>
+              <label className="text-sm font-medium mb-1.5 block">内容（支持粘贴图片）</label>
               <textarea
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="笔记内容..."
+                onPaste={handlePaste}
+                placeholder="笔记内容...（可直接粘贴图片）"
                 className="w-full h-24 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
@@ -948,13 +1228,42 @@ export function XiaohongshuNotes() {
                 className="hidden"
                 id="note-image-upload"
               />
-              <label
-                htmlFor="note-image-upload"
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border bg-background text-sm text-muted-foreground hover:bg-secondary cursor-pointer transition-colors"
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                className={`relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-xl border-2 transition-all cursor-pointer ${
+                  isDragging
+                    ? 'border-primary bg-primary/5'
+                    : 'border-dashed border-border hover:border-primary/50 hover:bg-secondary/50'
+                }`}
               >
-                <ImageIcon className="h-4 w-4" />
-                选择图片
-              </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="note-image-upload-2"
+                />
+                <label
+                  htmlFor="note-image-upload-2"
+                  className="flex flex-col items-center gap-2 cursor-pointer"
+                >
+                  <div className={`p-3 rounded-full transition-colors ${isDragging ? 'bg-primary/20' : 'bg-secondary'}`}>
+                    <Upload className={`h-6 w-6 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-foreground">
+                      {isDragging ? '松开鼠标上传图片' : '拖拽图片到此处，或点击选择'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      支持 JPG、PNG、GIF 格式 | 也可在内容框粘贴图片
+                    </p>
+                  </div>
+                </label>
+              </div>
               {newImages.length > 0 && (
                 <div className="flex gap-2 flex-wrap mt-3">
                   {newImages.map(img => (
