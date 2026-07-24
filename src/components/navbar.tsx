@@ -12,12 +12,12 @@ interface NavbarProps {
 export function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const tabs = [
     { id: 'dashboard' as const, label: '工作台', icon: BarChart3 },
-    { id: 'worklog' as const, label: '工作日志', icon: ClipboardList },
+    { id: 'analysis' as const, label: '数据分析', icon: TrendingUp },
     { id: 'xiaohongshu' as const, label: '小红书', icon: BookOpen },
+    { id: 'worklog' as const, label: '工作日志', icon: ClipboardList },
     { id: 'reviews' as const, label: '评价库', icon: MessageSquare },
     { id: 'viral' as const, label: '爆文库', icon: Flame },
     { id: 'learning' as const, label: '学习', icon: GraduationCap },
-    { id: 'analysis' as const, label: '数据分析', icon: TrendingUp },
     { id: 'expense' as const, label: '记账', icon: Wallet },
     { id: 'todos' as const, label: '待办', icon: FileText },
     { id: 'calendar' as const, label: '日历', icon: Calendar },
