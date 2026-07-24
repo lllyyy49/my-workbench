@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Edit2, ExternalLink, Eye, Heart, MessageCircle, Share2, Check, X, Copy, Image as ImageIcon, Package, FileText } from 'lucide-react';
+import { Plus, Trash2, Edit2, ExternalLink, Eye, Heart, MessageCircle, Share2, Check, X, Copy, Image as ImageIcon, Package, FileText, DollarSign, TrendingUp } from 'lucide-react';
 
 interface NoteImage {
   id: string;
@@ -24,6 +24,12 @@ interface XiaohongshuNote {
     comments: number;
     shares: number;
   };
+  // 商品销售数据（仅商品笔记）
+  salesData?: {
+    salesAmount: number; // 销售金额
+    salesVolume: number; // 销量
+    promotionCost: number; // 推广花费
+  };
   tags: string[];
   createdAt: number;
 }
@@ -44,6 +50,9 @@ export function XiaohongshuNotes() {
     likes: 0,
     comments: 0,
     shares: 0,
+    salesAmount: 0,
+    salesVolume: 0,
+    promotionCost: 0,
     tags: '',
   });
   const [newImages, setNewImages] = useState<NoteImage[]>([]);
@@ -72,6 +81,9 @@ export function XiaohongshuNotes() {
       likes: 0,
       comments: 0,
       shares: 0,
+      salesAmount: 0,
+      salesVolume: 0,
+      promotionCost: 0,
       tags: '',
     });
     setNewImages([]);
@@ -96,6 +108,9 @@ export function XiaohongshuNotes() {
       likes: note.stats.likes,
       comments: note.stats.comments,
       shares: note.stats.shares,
+      salesAmount: note.salesData?.salesAmount || 0,
+      salesVolume: note.salesData?.salesVolume || 0,
+      promotionCost: note.salesData?.promotionCost || 0,
       tags: note.tags.join(', '),
     });
     setNewImages(note.images || []);
@@ -137,6 +152,11 @@ export function XiaohongshuNotes() {
     if (!formData.title.trim()) return;
     
     const tags = formData.tags.split(',').map(t => t.trim()).filter(t => t);
+    const salesData = formData.type === 'product' ? {
+      salesAmount: formData.salesAmount,
+      salesVolume: formData.salesVolume,
+      promotionCost: formData.promotionCost,
+    } : undefined;
     
     if (editingNote) {
       setNotes(notes.map(n => n.id === editingNote.id ? {
@@ -154,6 +174,7 @@ export function XiaohongshuNotes() {
           comments: formData.comments,
           shares: formData.shares,
         },
+        salesData,
         tags,
       } : n));
     } else {
@@ -172,6 +193,7 @@ export function XiaohongshuNotes() {
           comments: formData.comments,
           shares: formData.shares,
         },
+        salesData,
         tags,
         createdAt: Date.now(),
       };
@@ -190,6 +212,13 @@ export function XiaohongshuNotes() {
     let text = `标题：${note.title}\n内容：${note.content}`;
     if (note.type === 'product') {
       text += `\n商品：${note.productName}\n链接：${note.productLink}`;
+      if (note.salesData) {
+        text += `\n销售金额：¥${note.salesData.salesAmount}\n销量：${note.salesData.salesVolume}\n推广花费：¥${note.salesData.promotionCost}`;
+        if (note.salesData.promotionCost > 0) {
+          const roi = (note.salesData.salesAmount / note.salesData.promotionCost).toFixed(2);
+          text += `\nROI：${roi}`;
+        }
+      }
     }
     text += `\n标签：${note.tags.map(t => '#' + t).join(' ')}`;
     navigator.clipboard.writeText(text);
@@ -200,13 +229,20 @@ export function XiaohongshuNotes() {
   const productCount = notes.filter(n => n.type === 'product').length;
   const totalViews = notes.reduce((sum, n) => sum + n.stats.views, 0);
   const totalLikes = notes.reduce((sum, n) => sum + n.stats.likes, 0);
+  
+  // 商品数据统计
+  const productNotes = notes.filter(n => n.type === 'product' && n.salesData);
+  const totalSalesAmount = productNotes.reduce((sum, n) => sum + (n.salesData?.salesAmount || 0), 0);
+  const totalSalesVolume = productNotes.reduce((sum, n) => sum + (n.salesData?.salesVolume || 0), 0);
+  const totalPromotionCost = productNotes.reduce((sum, n) => sum + (n.salesData?.promotionCost || 0), 0);
+  const overallROI = totalPromotionCost > 0 ? (totalSalesAmount / totalPromotionCost).toFixed(2) : '0.00';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold mb-2">小红书笔记管理</h2>
-          <p className="text-muted-foreground text-sm">记录笔记内容和推广数据</p>
+          <p className="text-muted-foreground text-sm">记录笔记内容、推广数据和商品销售</p>
         </div>
         <button
           onClick={openAddModal}
@@ -218,26 +254,38 @@ export function XiaohongshuNotes() {
       </div>
 
       {/* 数据统计 */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">笔记总数</p>
-          <p className="text-2xl font-bold mt-1">{notes.length}</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="bg-card rounded-xl border border-border p-3">
+          <p className="text-xs text-muted-foreground">笔记总数</p>
+          <p className="text-xl font-bold mt-1">{notes.length}</p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">普通笔记</p>
-          <p className="text-2xl font-bold mt-1">{normalCount}</p>
+        <div className="bg-card rounded-xl border border-border p-3">
+          <p className="text-xs text-muted-foreground">普通笔记</p>
+          <p className="text-xl font-bold mt-1">{normalCount}</p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">商品笔记</p>
-          <p className="text-2xl font-bold mt-1">{productCount}</p>
+        <div className="bg-card rounded-xl border border-border p-3">
+          <p className="text-xs text-muted-foreground">商品笔记</p>
+          <p className="text-xl font-bold mt-1">{productCount}</p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">总浏览量</p>
-          <p className="text-2xl font-bold mt-1">{totalViews.toLocaleString()}</p>
+        <div className="bg-card rounded-xl border border-border p-3">
+          <p className="text-xs text-muted-foreground">总浏览量</p>
+          <p className="text-xl font-bold mt-1">{totalViews.toLocaleString()}</p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">总点赞数</p>
-          <p className="text-2xl font-bold mt-1">{totalLikes.toLocaleString()}</p>
+        <div className="bg-card rounded-xl border border-border p-3">
+          <p className="text-xs text-muted-foreground">总点赞数</p>
+          <p className="text-xl font-bold mt-1">{totalLikes.toLocaleString()}</p>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-3 bg-primary/5">
+          <p className="text-xs text-muted-foreground">总销售额</p>
+          <p className="text-xl font-bold mt-1 text-primary">¥{totalSalesAmount.toLocaleString()}</p>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-3">
+          <p className="text-xs text-muted-foreground">总销量</p>
+          <p className="text-xl font-bold mt-1">{totalSalesVolume}</p>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-3 bg-primary/5">
+          <p className="text-xs text-muted-foreground">整体ROI</p>
+          <p className="text-xl font-bold mt-1 text-primary">{overallROI}</p>
         </div>
       </div>
 
@@ -280,121 +328,157 @@ export function XiaohongshuNotes() {
       {/* 笔记列表 */}
       {filteredNotes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredNotes.map(note => (
-            <div key={note.id} className="bg-card rounded-xl border border-border p-5 hover:shadow-sm transition-all">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                      note.type === 'product'
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-secondary text-muted-foreground'
-                    }`}>
-                      {note.type === 'product' ? '商品笔记' : '普通笔记'}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold line-clamp-1">{note.title}</h3>
-                </div>
-                <div className="flex gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => copyNoteInfo(note)}
-                    className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
-                    title="复制笔记信息"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => openEditModal(note)}
-                    className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => deleteNote(note.id)}
-                    className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* 图片展示 */}
-              {note.images && note.images.length > 0 && (
-                <div className="flex gap-2 flex-wrap mb-3">
-                  {note.images.slice(0, 4).map(img => (
-                    <img
-                      key={img.id}
-                      src={img.dataUrl}
-                      alt={img.name}
-                      className="w-16 h-16 object-cover rounded-lg border border-border"
-                    />
-                  ))}
-                  {note.images.length > 4 && (
-                    <div className="w-16 h-16 rounded-lg border border-border bg-secondary flex items-center justify-center">
-                      <span className="text-xs text-muted-foreground">+{note.images.length - 4}</span>
+          {filteredNotes.map(note => {
+            const roi = note.salesData && note.salesData.promotionCost > 0
+              ? (note.salesData.salesAmount / note.salesData.promotionCost).toFixed(2)
+              : null;
+            
+            return (
+              <div key={note.id} className="bg-card rounded-xl border border-border p-5 hover:shadow-sm transition-all">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                        note.type === 'product'
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-secondary text-muted-foreground'
+                      }`}>
+                        {note.type === 'product' ? '商品笔记' : '普通笔记'}
+                      </span>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {note.content && (
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{note.content}</p>
-              )}
-
-              {note.type === 'product' && note.productName && (
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                    {note.productName}
-                  </span>
-                  {note.productLink && (
-                    <a
-                      href={note.productLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-muted-foreground hover:text-foreground"
+                    <h3 className="font-semibold line-clamp-1">{note.title}</h3>
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => copyNoteInfo(note)}
+                      className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                      title="复制笔记信息"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  )}
+                      <Copy className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => openEditModal(note)}
+                      className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteNote(note.id)}
+                      className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-              )}
 
-              {/* 数据统计 */}
-              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                <span className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  {note.stats.views.toLocaleString()}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Heart className="h-4 w-4" />
-                  {note.stats.likes.toLocaleString()}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MessageCircle className="h-4 w-4" />
-                  {note.stats.comments.toLocaleString()}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Share2 className="h-4 w-4" />
-                  {note.stats.shares.toLocaleString()}
-                </span>
-              </div>
+                {/* 图片展示 */}
+                {note.images && note.images.length > 0 && (
+                  <div className="flex gap-2 flex-wrap mb-3">
+                    {note.images.slice(0, 4).map(img => (
+                      <img
+                        key={img.id}
+                        src={img.dataUrl}
+                        alt={img.name}
+                        className="w-16 h-16 object-cover rounded-lg border border-border"
+                      />
+                    ))}
+                    {note.images.length > 4 && (
+                      <div className="w-16 h-16 rounded-lg border border-border bg-secondary flex items-center justify-center">
+                        <span className="text-xs text-muted-foreground">+{note.images.length - 4}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* 标签 */}
-              {note.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {note.tags.map((tag, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 rounded bg-secondary text-muted-foreground">
-                      #{tag}
+                {note.content && (
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{note.content}</p>
+                )}
+
+                {note.type === 'product' && note.productName && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                      {note.productName}
                     </span>
-                  ))}
-                </div>
-              )}
+                    {note.productLink && (
+                      <a
+                        href={note.productLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
+                )}
 
-              <p className="text-xs text-muted-foreground mt-3">
-                发布于 {note.publishDate}
-              </p>
-            </div>
-          ))}
+                {/* 互动数据 */}
+                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                  <span className="flex items-center gap-1">
+                    <Eye className="h-4 w-4" />
+                    {note.stats.views.toLocaleString()}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Heart className="h-4 w-4" />
+                    {note.stats.likes.toLocaleString()}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MessageCircle className="h-4 w-4" />
+                    {note.stats.comments.toLocaleString()}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Share2 className="h-4 w-4" />
+                    {note.stats.shares.toLocaleString()}
+                  </span>
+                </div>
+
+                {/* 商品销售数据 */}
+                {note.type === 'product' && note.salesData && (
+                  <div className="bg-secondary/50 rounded-lg p-3 mb-3 space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground mb-1">
+                      <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                      销售数据
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">销售金额</span>
+                        <span className="font-medium text-primary">¥{note.salesData.salesAmount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">销量</span>
+                        <span className="font-medium">{note.salesData.salesVolume}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">推广花费</span>
+                        <span className="font-medium">¥{note.salesData.promotionCost.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">ROI</span>
+                        <span className={`font-medium ${roi && parseFloat(roi) >= 1 ? 'text-green-600' : 'text-orange-600'}`}>
+                          {roi || '-'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 标签 */}
+                {note.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {note.tags.map((tag, i) => (
+                      <span key={i} className="text-xs px-2 py-0.5 rounded bg-secondary text-muted-foreground">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground mt-3">
+                  发布于 {note.publishDate}
+                </p>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="bg-card rounded-xl border border-border p-12 text-center">
@@ -537,6 +621,50 @@ export function XiaohongshuNotes() {
                     placeholder="https://..."
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
+                </div>
+
+                {/* 销售数据 */}
+                <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-1.5 text-sm font-medium">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    商品销售数据
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">销售金额 (¥)</label>
+                      <input
+                        type="number"
+                        value={formData.salesAmount}
+                        onChange={(e) => setFormData({ ...formData, salesAmount: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">销量</label>
+                      <input
+                        type="number"
+                        value={formData.salesVolume}
+                        onChange={(e) => setFormData({ ...formData, salesVolume: parseInt(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">推广花费 (¥)</label>
+                      <input
+                        type="number"
+                        value={formData.promotionCost}
+                        onChange={(e) => setFormData({ ...formData, promotionCost: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                  </div>
+                  {formData.promotionCost > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      预计 ROI: <span className={`font-medium ${formData.salesAmount / formData.promotionCost >= 1 ? 'text-green-600' : 'text-orange-600'}`}>
+                        {(formData.salesAmount / formData.promotionCost).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </>
             )}
