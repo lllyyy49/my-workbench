@@ -1,8 +1,8 @@
 'use client';
 
-import { BarChart3, ClipboardList, Calendar, FileText, BookOpen, MessageSquare, GraduationCap } from 'lucide-react';
+import { BarChart3, ClipboardList, Calendar, FileText, BookOpen, MessageSquare, GraduationCap, TrendingUp } from 'lucide-react';
 
-type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'todos' | 'calendar' | 'notes';
+type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'todos' | 'calendar' | 'notes';
 
 interface NavbarProps {
   activeTab: TabType;
@@ -16,6 +16,7 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
     { id: 'xiaohongshu' as const, label: '小红书', icon: BookOpen },
     { id: 'reviews' as const, label: '评价库', icon: MessageSquare },
     { id: 'learning' as const, label: '学习', icon: GraduationCap },
+    { id: 'analysis' as const, label: '数据分析', icon: TrendingUp },
     { id: 'todos' as const, label: '待办', icon: FileText },
     { id: 'calendar' as const, label: '日历', icon: Calendar },
     { id: 'notes' as const, label: '记事', icon: FileText },
