@@ -8,11 +8,12 @@ import { XiaohongshuNotes } from '@/components/xiaohongshu-notes';
 import { ReviewTemplates } from '@/components/review-templates';
 import { LearningArea } from '@/components/learning-area';
 import { DataAnalysis } from '@/components/data-analysis';
+import { ExpenseTracker } from '@/components/expense-tracker';
 import { TodoList } from '@/components/todo-list';
 import { CalendarView } from '@/components/calendar-view';
 import { QuickNotes } from '@/components/quick-notes';
 
-type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'todos' | 'calendar' | 'notes';
+type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'expense' | 'todos' | 'calendar' | 'notes';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -31,6 +32,8 @@ export default function Home() {
         return <LearningArea />;
       case 'analysis':
         return <DataAnalysis />;
+      case 'expense':
+        return <ExpenseTracker />;
       case 'todos':
         return <TodoList />;
       case 'calendar':
