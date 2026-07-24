@@ -3,6 +3,67 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, ExternalLink, BookOpen, FileText, Lightbulb, Target, Check, X, Folder, ChevronDown, ChevronRight } from 'lucide-react';
 
+// 激励句子库
+const getMotivation = (level: number): string => {
+  const motivations: Record<number, string[]> = {
+    3: [ // 10个及以上 - 超级学霸
+      '🏆 学霸模式全开！今天的你闪闪发光！',
+      '🌟 太厉害了！知识正在被你疯狂吸收！',
+      '💎 今天的努力，是明天成功的基石！',
+      '🚀 学习速度惊人，你正在飞速成长！',
+      '👑 知识王者！今天的你无人能敌！',
+      '🎯 目标明确，执行力满分！为你点赞！',
+    ],
+    2: [ // 7-9个 - 优秀学员
+      '🎉 超棒的表现！学习达人就是你！',
+      '✨ 今天的收获满满，明天继续闪耀！',
+      '🔥 学习热情高涨，保持这个节奏！',
+      '💪 坚持的力量，你正在创造奇迹！',
+      '🌈 每一分努力都不会被辜负，继续加油！',
+      '⭐ 优秀是一种习惯，你已经做到了！',
+    ],
+    1: [ // 5-6个 - 表现良好
+      '🎊 今天学习很充实！继续保持！',
+      '👏 不错的进度，你正在稳步前进！',
+      '📚 知识在积累，能力在提升！',
+      '💫 每一步都算数，继续前行！',
+      '🌻 每天进步一点点，终会到达远方！',
+      '🎈 轻松愉快的一天，学习效率满分！',
+    ],
+    0: [ // 3-4个 - 小有进步
+      '👍 不错的进度，继续加油！',
+      '💪 小步快跑，也是前进！',
+      '🌟 今天的你比昨天更优秀！',
+      '📖 知识的力量在于积累，继续！',
+      '🎯 目标清晰，步履不停！',
+      '🌻 每天进步一点点，终会到达远方！',
+    ],
+    '-1': [ // 1-2个 - 好的开始
+      '💪 好的开始，继续努力！',
+      '🌱 万事开头难，你已经迈出了第一步！',
+      '🌈 每一小步都是进步，加油！',
+      '✨ 积少成多，聚沙成塔！',
+      '🎈 今天的学习之旅已经开始！',
+      '🌟 不积跬步，无以至千里！',
+    ],
+    '-2': [ // 0个 - 鼓励开始
+      '🌅 新的一天，新的开始，加油！',
+      '🌟 今天也要元气满满哦！',
+      '💫 学习什么时候开始都不晚！',
+      '🎯 设定一个小目标，开始行动吧！',
+      '🌻 种一棵树最好的时间是十年前，其次是现在！',
+      '🚀 行动是治愈恐惧的良药，开始学习吧！',
+      '📚 翻开书本，开启今天的学习之旅！',
+    ],
+  };
+  
+  const list = motivations[level] || motivations['-2'];
+  // 基于日期随机选择，保证同一天显示同一句
+  const today = new Date();
+  const dayIndex = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  return list[dayIndex % list.length];
+};
+
 // 学习分类
 interface LearningCategory {
   id: string;
@@ -334,10 +395,18 @@ export function LearningArea() {
         {todayCompletedTasks > 0 && (
           <div className="mt-4 pt-4 border-t border-teal-200 dark:border-teal-800">
             <p className="text-sm text-muted-foreground text-center">
-              {todayCompletedTasks >= 5 ? '🎉 今天学习很充实！继续保持！' :
-               todayCompletedTasks >= 3 ? '👍 不错的进度，继续加油！' :
-               todayCompletedTasks >= 1 ? '💪 好的开始，继续努力！' :
-               '🌟 新的一天，开始学习吧！'}
+              {todayCompletedTasks >= 10 ? getMotivation(3) :
+               todayCompletedTasks >= 7 ? getMotivation(2) :
+               todayCompletedTasks >= 5 ? getMotivation(1) :
+               todayCompletedTasks >= 3 ? getMotivation(0) :
+               getMotivation(-1)}
+            </p>
+          </div>
+        )}
+        {todayCompletedTasks === 0 && (
+          <div className="mt-4 pt-4 border-t border-teal-200 dark:border-teal-800">
+            <p className="text-sm text-muted-foreground text-center">
+              {getMotivation(-2)}
             </p>
           </div>
         )}
