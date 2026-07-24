@@ -1,8 +1,8 @@
 'use client';
 
-import { CheckSquare, Calendar, FileText, BarChart3 } from 'lucide-react';
+import { BarChart3, ClipboardList, Calendar, FileText, BookOpen, MessageSquare } from 'lucide-react';
 
-type TabType = 'dashboard' | 'todos' | 'calendar' | 'notes';
+type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'todos' | 'calendar' | 'notes';
 
 interface NavbarProps {
   activeTab: TabType;
@@ -12,9 +12,12 @@ interface NavbarProps {
 export function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const tabs = [
     { id: 'dashboard' as const, label: '工作台', icon: BarChart3 },
-    { id: 'todos' as const, label: '待办事项', icon: CheckSquare },
-    { id: 'calendar' as const, label: '日程日历', icon: Calendar },
-    { id: 'notes' as const, label: '快速记事', icon: FileText },
+    { id: 'worklog' as const, label: '工作日志', icon: ClipboardList },
+    { id: 'xiaohongshu' as const, label: '小红书', icon: BookOpen },
+    { id: 'reviews' as const, label: '评价库', icon: MessageSquare },
+    { id: 'todos' as const, label: '待办', icon: FileText },
+    { id: 'calendar' as const, label: '日历', icon: Calendar },
+    { id: 'notes' as const, label: '记事', icon: FileText },
   ];
 
   return (
@@ -30,14 +33,14 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
           </div>
           
           {/* 桌面端导航标签 */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => onTabChange(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     activeTab === tab.id
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
@@ -53,15 +56,15 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
       </header>
 
       {/* 移动端底部导航 */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 safe-area-bottom">
-        <div className="flex items-center justify-around h-16">
-          {tabs.map((tab) => {
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 safe-area-bottom">
+        <div className="flex items-center justify-around h-16 overflow-x-auto">
+          {tabs.slice(0, 5).map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`flex flex-col items-center justify-center gap-1 px-3 py-2 min-w-[60px] rounded-lg transition-all duration-200 ${
+                className={`flex flex-col items-center justify-center gap-1 px-2 py-2 min-w-[56px] rounded-lg transition-all duration-200 ${
                   activeTab === tab.id
                     ? 'text-primary'
                     : 'text-muted-foreground'

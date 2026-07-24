@@ -3,11 +3,14 @@
 import { useState } from 'react';
 import { Navbar } from '@/components/navbar';
 import { Dashboard } from '@/components/dashboard';
+import { DailyWorkLog } from '@/components/daily-work-log';
+import { XiaohongshuNotes } from '@/components/xiaohongshu-notes';
+import { ReviewTemplates } from '@/components/review-templates';
 import { TodoList } from '@/components/todo-list';
 import { CalendarView } from '@/components/calendar-view';
 import { QuickNotes } from '@/components/quick-notes';
 
-type TabType = 'dashboard' | 'todos' | 'calendar' | 'notes';
+type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'todos' | 'calendar' | 'notes';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -16,6 +19,12 @@ export default function Home() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard />;
+      case 'worklog':
+        return <DailyWorkLog />;
+      case 'xiaohongshu':
+        return <XiaohongshuNotes />;
+      case 'reviews':
+        return <ReviewTemplates />;
       case 'todos':
         return <TodoList />;
       case 'calendar':
@@ -30,7 +39,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="container max-w-7xl mx-auto px-4 md:px-6 py-6 pb-24 md:pb-6">
+      <main className="container max-w-7xl mx-auto px-4 md:px-6 py-6 pb-24 lg:pb-6">
         {renderContent()}
       </main>
     </div>
