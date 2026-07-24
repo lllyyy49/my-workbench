@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal, Camera, User } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -10,6 +10,103 @@ interface NavbarProps {
 
 export function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 从 localStorage 加载头像
+  useEffect(() => {
+    const savedAvatar = localStorage.getItem('user-avatar');
+    if (savedAvatar) {
+      setAvatar(savedAvatar);
+    }
+  }, []);
+
+  // 处理头像上传
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('图片大小不能超过5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setAvatar(result);
+        localStorage.setItem('user-avatar', result);
+        setShowAvatarMenu(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 删除头像
+  const handleRemoveAvatar = () => {
+    setAvatar(null);
+    localStorage.removeItem('user-avatar');
+    setShowAvatarMenu(false);
+  };
+
+  // 头像组件
+  const AvatarComponent = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
+    const sizeClasses = {
+      sm: 'h-8 w-8',
+      md: 'h-10 w-10',
+      lg: 'h-12 w-12',
+    };
+
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setShowAvatarMenu(!showAvatarMenu)}
+          className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-teal-200 hover:border-teal-400 transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center bg-gradient-to-br from-teal-50 to-emerald-50`}
+        >
+          {avatar ? (
+            <img src={avatar} alt="头像" className="h-full w-full object-cover" />
+          ) : (
+            <User className={`${size === 'sm' ? 'h-4 w-4' : size === 'md' ? 'h-5 w-5' : 'h-6 w-6'} text-teal-500`} />
+          )}
+        </button>
+        
+        {/* 头像菜单 */}
+        {showAvatarMenu && (
+          <>
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setShowAvatarMenu(false)}
+            />
+            <div className="absolute right-0 top-full mt-2 z-50 bg-white rounded-xl shadow-lg border border-gray-100 py-2 min-w-[140px]">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 flex items-center gap-2 transition-colors"
+              >
+                <Camera className="h-4 w-4" />
+                {avatar ? '更换头像' : '上传头像'}
+              </button>
+              {avatar && (
+                <button
+                  onClick={handleRemoveAvatar}
+                  className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                  删除头像
+                </button>
+              )}
+            </div>
+          </>
+        )}
+        
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleAvatarUpload}
+          className="hidden"
+        />
+      </div>
+    );
+  };
 
   const tabs = [
     { id: 'dashboard' as const, label: '工作台', icon: BarChart3 },
@@ -67,6 +164,10 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
                 );
               })}
             </nav>
+            {/* 桌面端头像 */}
+            <div className="hidden lg:block">
+              <AvatarComponent size="md" />
+            </div>
           </div>
         </div>
       </header>
@@ -100,6 +201,8 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
             <MoreHorizontal className="h-5 w-5" />
             <span className="text-xs font-medium">更多</span>
           </button>
+          {/* 移动端头像 */}
+          <AvatarComponent size="sm" />
         </div>
       </nav>
 
