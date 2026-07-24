@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, ExternalLink, BookOpen, FileText, Lightbulb, Target, Check, X, Link as LinkIcon, Folder } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, BookOpen, FileText, Lightbulb, Target, Check, X, Folder, ChevronDown, ChevronRight } from 'lucide-react';
 
 // 学习分类
 interface LearningCategory {
@@ -11,33 +11,33 @@ interface LearningCategory {
   color: string;
 }
 
+// 学习任务
+interface LearningTask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+// 学习阶段
+interface LearningStage {
+  id: string;
+  name: string;
+  description: string;
+  tasks: LearningTask[];
+  order: number;
+}
+
 // 学习资源
 interface LearningResource {
   id: string;
   categoryId: string;
   title: string;
   type: 'video' | 'document' | 'link' | 'other';
-  source: string; // 来源：百度网盘、B站、YouTube等
+  source: string;
   link: string;
-  progress: number; // 0-100
-  status: 'not-started' | 'in-progress' | 'completed';
-  notes: LearningNote[];
-  insights: LearningInsight[];
-  createdAt: number;
-}
-
-// 学习笔记
-interface LearningNote {
-  id: string;
-  content: string;
-  timestamp: number;
-}
-
-// 思考与转化
-interface LearningInsight {
-  id: string;
-  type: 'thought' | 'practice' | 'summary'; // 思考、实践、总结
-  content: string;
+  stages: LearningStage[];
+  notes: string;
+  insights: string;
   createdAt: number;
 }
 
@@ -52,10 +52,11 @@ export function LearningArea() {
   const [categories, setCategories] = useState<LearningCategory[]>([]);
   const [resources, setResources] = useState<LearningResource[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [expandedResource, setExpandedResource] = useState<string | null>(null);
+  const [expandedStage, setExpandedStage] = useState<string | null>(null);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [showAddResourceModal, setShowAddResourceModal] = useState(false);
-  const [showNoteModal, setShowNoteModal] = useState<string | null>(null);
-  const [showInsightModal, setShowInsightModal] = useState<string | null>(null);
+  const [showAddStageModal, setShowAddStageModal] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState('📖');
   const [newResource, setNewResource] = useState({
@@ -64,11 +65,8 @@ export function LearningArea() {
     source: '',
     link: '',
   });
-  const [newNoteContent, setNewNoteContent] = useState('');
-  const [newInsight, setNewInsight] = useState({
-    type: 'thought' as 'thought' | 'practice' | 'summary',
-    content: '',
-  });
+  const [newStage, setNewStage] = useState({ name: '', description: '' });
+  const [newTaskTitle, setNewTaskTitle] = useState('');
 
   useEffect(() => {
     const storedCategories = localStorage.getItem('learning-categories');
@@ -122,72 +120,105 @@ export function LearningArea() {
       type: newResource.type,
       source: newResource.source.trim(),
       link: newResource.link.trim(),
-      progress: 0,
-      status: 'not-started',
-      notes: [],
-      insights: [],
+      stages: [],
+      notes: '',
+      insights: '',
       createdAt: Date.now(),
     };
     setResources([resource, ...resources]);
     setNewResource({ title: '', type: 'video', source: '', link: '' });
     setShowAddResourceModal(false);
+    setExpandedResource(resource.id);
   };
 
   const deleteResource = (id: string) => {
     setResources(resources.filter(r => r.id !== id));
   };
 
-  const updateResourceProgress = (id: string, progress: number) => {
-    setResources(resources.map(r => r.id === id ? {
-      ...r,
-      progress,
-      status: progress === 0 ? 'not-started' : progress === 100 ? 'completed' : 'in-progress',
-    } : r));
-  };
-
-  const addNote = (resourceId: string) => {
-    if (!newNoteContent.trim()) return;
-    const note: LearningNote = {
+  const addStage = (resourceId: string) => {
+    if (!newStage.name.trim()) return;
+    const resource = resources.find(r => r.id === resourceId);
+    if (!resource) return;
+    const stage: LearningStage = {
       id: Date.now().toString(),
-      content: newNoteContent.trim(),
-      timestamp: Date.now(),
+      name: newStage.name.trim(),
+      description: newStage.description.trim(),
+      tasks: [],
+      order: resource.stages.length,
     };
     setResources(resources.map(r => r.id === resourceId ? {
       ...r,
-      notes: [...r.notes, note],
+      stages: [...r.stages, stage],
     } : r));
-    setNewNoteContent('');
-    setShowNoteModal(null);
+    setNewStage({ name: '', description: '' });
+    setShowAddStageModal(null);
+    setExpandedStage(stage.id);
   };
 
-  const deleteNote = (resourceId: string, noteId: string) => {
+  const deleteStage = (resourceId: string, stageId: string) => {
     setResources(resources.map(r => r.id === resourceId ? {
       ...r,
-      notes: r.notes.filter(n => n.id !== noteId),
+      stages: r.stages.filter(s => s.id !== stageId),
     } : r));
   };
 
-  const addInsight = (resourceId: string) => {
-    if (!newInsight.content.trim()) return;
-    const insight: LearningInsight = {
+  const addTask = (resourceId: string, stageId: string) => {
+    if (!newTaskTitle.trim()) return;
+    const task: LearningTask = {
       id: Date.now().toString(),
-      type: newInsight.type,
-      content: newInsight.content.trim(),
-      createdAt: Date.now(),
+      title: newTaskTitle.trim(),
+      completed: false,
     };
     setResources(resources.map(r => r.id === resourceId ? {
       ...r,
-      insights: [...r.insights, insight],
+      stages: r.stages.map(s => s.id === stageId ? {
+        ...s,
+        tasks: [...s.tasks, task],
+      } : s),
     } : r));
-    setNewInsight({ type: 'thought', content: '' });
-    setShowInsightModal(null);
+    setNewTaskTitle('');
   };
 
-  const deleteInsight = (resourceId: string, insightId: string) => {
+  const toggleTask = (resourceId: string, stageId: string, taskId: string) => {
     setResources(resources.map(r => r.id === resourceId ? {
       ...r,
-      insights: r.insights.filter(i => i.id !== insightId),
+      stages: r.stages.map(s => s.id === stageId ? {
+        ...s,
+        tasks: s.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t),
+      } : s),
     } : r));
+  };
+
+  const deleteTask = (resourceId: string, stageId: string, taskId: string) => {
+    setResources(resources.map(r => r.id === resourceId ? {
+      ...r,
+      stages: r.stages.map(s => s.id === stageId ? {
+        ...s,
+        tasks: s.tasks.filter(t => t.id !== taskId),
+      } : s),
+    } : r));
+  };
+
+  const updateNotes = (resourceId: string, notes: string) => {
+    setResources(resources.map(r => r.id === resourceId ? { ...r, notes } : r));
+  };
+
+  const updateInsights = (resourceId: string, insights: string) => {
+    setResources(resources.map(r => r.id === resourceId ? { ...r, insights } : r));
+  };
+
+  // 计算阶段进度
+  const getStageProgress = (stage: LearningStage): number => {
+    if (stage.tasks.length === 0) return 0;
+    const completed = stage.tasks.filter(t => t.completed).length;
+    return Math.round((completed / stage.tasks.length) * 100);
+  };
+
+  // 计算资源整体进度
+  const getResourceProgress = (resource: LearningResource): number => {
+    if (resource.stages.length === 0) return 0;
+    const totalProgress = resource.stages.reduce((sum, s) => sum + getStageProgress(s), 0);
+    return Math.round(totalProgress / resource.stages.length);
   };
 
   const filteredResources = selectedCategory === 'all'
@@ -196,35 +227,17 @@ export function LearningArea() {
 
   const getCategoryById = (id: string) => categories.find(c => c.id === id);
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'not-started': return '未开始';
-      case 'in-progress': return '学习中';
-      case 'completed': return '已完成';
-      default: return '';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'not-started': return 'bg-secondary text-muted-foreground';
-      case 'in-progress': return 'bg-primary/10 text-primary';
-      case 'completed': return 'bg-green-100 text-green-700';
-      default: return '';
-    }
-  };
-
   const totalResources = resources.length;
-  const completedResources = resources.filter(r => r.status === 'completed').length;
-  const totalNotes = resources.reduce((sum, r) => sum + r.notes.length, 0);
-  const totalInsights = resources.reduce((sum, r) => sum + r.insights.length, 0);
+  const totalStages = resources.reduce((sum, r) => sum + r.stages.length, 0);
+  const totalTasks = resources.reduce((sum, r) => sum + r.stages.reduce((s, st) => s + st.tasks.length, 0), 0);
+  const completedTasks = resources.reduce((sum, r) => sum + r.stages.reduce((s, st) => s + st.tasks.filter(t => t.completed).length, 0), 0);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold mb-2">学习区域</h2>
-          <p className="text-muted-foreground text-sm">管理学习资源，记录笔记与思考</p>
+          <p className="text-muted-foreground text-sm">多阶段学习管理，追踪每个阶段的任务和进度</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -253,16 +266,16 @@ export function LearningArea() {
           <p className="text-2xl font-bold mt-1">{totalResources}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">已完成</p>
-          <p className="text-2xl font-bold mt-1 text-green-600">{completedResources}</p>
+          <p className="text-sm text-muted-foreground">学习阶段</p>
+          <p className="text-2xl font-bold mt-1">{totalStages}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">学习笔记</p>
-          <p className="text-2xl font-bold mt-1">{totalNotes}</p>
+          <p className="text-sm text-muted-foreground">已完成任务</p>
+          <p className="text-2xl font-bold mt-1 text-green-600">{completedTasks}/{totalTasks}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">思考转化</p>
-          <p className="text-2xl font-bold mt-1">{totalInsights}</p>
+          <p className="text-sm text-muted-foreground">总体进度</p>
+          <p className="text-2xl font-bold mt-1">{totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%</p>
         </div>
       </div>
 
@@ -302,148 +315,218 @@ export function LearningArea() {
       </div>
 
       {/* 资源列表 */}
-      {selectedCategory !== 'all' && filteredResources.length > 0 ? (
+      {filteredResources.length > 0 ? (
         <div className="space-y-4">
           {filteredResources.map(resource => {
             const category = getCategoryById(resource.categoryId);
+            const progress = getResourceProgress(resource);
+            const isExpanded = expandedResource === resource.id;
+
             return (
-              <div key={resource.id} className="bg-card rounded-xl border border-border p-5 hover:shadow-sm transition-all">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span>{category?.icon}</span>
-                      <h3 className="font-semibold">{resource.title}</h3>
+              <div key={resource.id} className="bg-card rounded-xl border border-border overflow-hidden">
+                {/* 资源头部 */}
+                <div
+                  className="p-5 cursor-pointer hover:bg-secondary/30 transition-all"
+                  onClick={() => setExpandedResource(isExpanded ? null : resource.id)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                        <span>{category?.icon}</span>
+                        <h3 className="font-semibold">{resource.title}</h3>
+                        <span className="text-sm font-medium text-primary">{progress}%</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground ml-6">
+                        {resource.source && <span>来源: {resource.source}</span>}
+                        <span>{resource.stages.length} 个阶段</span>
+                        <span>{resource.stages.reduce((s, st) => s + st.tasks.length, 0)} 个任务</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {resource.source && <span>来源: {resource.source}</span>}
-                      <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(resource.status)}`}>
-                        {getStatusLabel(resource.status)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    {resource.link && (
-                      <a
-                        href={resource.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
-                        title="打开链接"
+                    <div className="flex gap-1 flex-shrink-0">
+                      {resource.link && (
+                        <a
+                          href={resource.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                          title="打开链接"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteResource(resource.id); }}
+                        className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"
                       >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    )}
-                    <button
-                      onClick={() => setShowNoteModal(resource.id)}
-                      className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
-                      title="添加笔记"
-                    >
-                      <FileText className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => setShowInsightModal(resource.id)}
-                      className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
-                      title="添加思考"
-                    >
-                      <Lightbulb className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteResource(resource.id)}
-                      className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {/* 进度条 */}
+                  <div className="mt-3 ml-6">
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* 进度条 */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">学习进度</span>
-                    <span className="font-medium">{resource.progress}%</span>
-                  </div>
-                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${resource.progress}%` }}
-                    />
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={resource.progress}
-                    onChange={(e) => updateResourceProgress(resource.id, parseInt(e.target.value))}
-                    className="w-full mt-2 accent-primary"
-                  />
-                </div>
+                {/* 展开内容 */}
+                {isExpanded && (
+                  <div className="border-t border-border p-5 space-y-4">
+                    {/* 阶段列表 */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium flex items-center gap-1.5">
+                          <Target className="h-4 w-4 text-primary" />
+                          学习阶段
+                        </h4>
+                        <button
+                          onClick={() => setShowAddStageModal(resource.id)}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          添加阶段
+                        </button>
+                      </div>
 
-                {/* 笔记列表 */}
-                {resource.notes.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      学习笔记 ({resource.notes.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {resource.notes.slice(-3).map(note => (
-                        <div key={note.id} className="p-3 rounded-lg bg-secondary/50 text-sm group">
-                          <p className="whitespace-pre-wrap">{note.content}</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(note.timestamp).toLocaleString()}
-                            </span>
-                            <button
-                              onClick={() => deleteNote(resource.id, note.id)}
-                              className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-background text-muted-foreground hover:text-destructive transition-all"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
+                      {resource.stages.length === 0 ? (
+                        <div className="text-center py-6 text-muted-foreground text-sm">
+                          暂无学习阶段，点击上方按钮添加
                         </div>
-                      ))}
-                      {resource.notes.length > 3 && (
-                        <p className="text-xs text-muted-foreground">
-                          还有 {resource.notes.length - 3} 条笔记...
-                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {resource.stages.map((stage, index) => {
+                            const stageProgress = getStageProgress(stage);
+                            const isStageExpanded = expandedStage === stage.id;
+                            const completedTasks = stage.tasks.filter(t => t.completed).length;
+
+                            return (
+                              <div key={stage.id} className="rounded-lg border border-border overflow-hidden">
+                                {/* 阶段头部 */}
+                                <div
+                                  className="p-3 cursor-pointer hover:bg-secondary/30 transition-all flex items-center gap-3"
+                                  onClick={() => setExpandedStage(isStageExpanded ? null : stage.id)}
+                                >
+                                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                    {index + 1}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      {isStageExpanded ? <ChevronDown className="h-3 w-3 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+                                      <span className="font-medium text-sm">{stage.name}</span>
+                                      <span className="text-xs text-muted-foreground">{stageProgress}%</span>
+                                    </div>
+                                    {stage.description && (
+                                      <p className="text-xs text-muted-foreground mt-0.5 ml-5">{stage.description}</p>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground flex-shrink-0">
+                                    {completedTasks}/{stage.tasks.length}
+                                  </div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); deleteStage(resource.id, stage.id); }}
+                                    className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-destructive flex-shrink-0"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                {/* 阶段进度条 */}
+                                <div className="px-3 pb-2 ml-11">
+                                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-primary rounded-full transition-all"
+                                      style={{ width: `${stageProgress}%` }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* 展开的任务列表 */}
+                                {isStageExpanded && (
+                                  <div className="border-t border-border p-3 space-y-2">
+                                    {/* 添加任务 */}
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        value={newTaskTitle}
+                                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') addTask(resource.id, stage.id); }}
+                                        placeholder="添加任务，按回车确认"
+                                        className="flex-1 px-3 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                      />
+                                      <button
+                                        onClick={() => addTask(resource.id, stage.id)}
+                                        className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 text-sm"
+                                      >
+                                        添加
+                                      </button>
+                                    </div>
+                                    {/* 任务列表 */}
+                                    {stage.tasks.map(task => (
+                                      <div key={task.id} className="flex items-center gap-2 group">
+                                        <button
+                                          onClick={() => toggleTask(resource.id, stage.id, task.id)}
+                                          className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                            task.completed
+                                              ? 'bg-primary border-primary'
+                                              : 'border-border hover:border-primary'
+                                          }`}
+                                        >
+                                          {task.completed && <Check className="h-3 w-3 text-white" />}
+                                        </button>
+                                        <span className={`text-sm flex-1 ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                          {task.title}
+                                        </span>
+                                        <button
+                                          onClick={() => deleteTask(resource.id, stage.id, task.id)}
+                                          className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-secondary text-muted-foreground hover:text-destructive transition-all"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                    {stage.tasks.length === 0 && (
+                                      <p className="text-xs text-muted-foreground text-center py-2">暂无任务，添加你的第一个任务吧</p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
-                  </div>
-                )}
 
-                {/* 思考与转化 */}
-                {resource.insights.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-                      <Lightbulb className="h-4 w-4 text-muted-foreground" />
-                      思考与转化 ({resource.insights.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {resource.insights.slice(-3).map(insight => (
-                        <div key={insight.id} className="p-3 rounded-lg bg-primary/5 text-sm group">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-xs px-2 py-0.5 rounded ${
-                              insight.type === 'thought' ? 'bg-blue-100 text-blue-700' :
-                              insight.type === 'practice' ? 'bg-green-100 text-green-700' :
-                              'bg-purple-100 text-purple-700'
-                            }`}>
-                              {insight.type === 'thought' ? '思考' : insight.type === 'practice' ? '实践' : '总结'}
-                            </span>
-                          </div>
-                          <p className="whitespace-pre-wrap">{insight.content}</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(insight.createdAt).toLocaleString()}
-                            </span>
-                            <button
-                              onClick={() => deleteInsight(resource.id, insight.id)}
-                              className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-background text-muted-foreground hover:text-destructive transition-all"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                    {/* 学习笔记 */}
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        学习笔记
+                      </h4>
+                      <textarea
+                        value={resource.notes}
+                        onChange={(e) => updateNotes(resource.id, e.target.value)}
+                        placeholder="记录你的学习笔记..."
+                        className="w-full h-24 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+
+                    {/* 思考与转化 */}
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                        <Lightbulb className="h-4 w-4 text-muted-foreground" />
+                        思考与转化
+                      </h4>
+                      <textarea
+                        value={resource.insights}
+                        onChange={(e) => updateInsights(resource.id, e.target.value)}
+                        placeholder="记录你的思考、实践计划和总结..."
+                        className="w-full h-24 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
                     </div>
                   </div>
                 )}
@@ -558,9 +641,6 @@ export function LearningArea() {
                 placeholder="https://..."
                 className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                支持百度网盘、B站等链接，点击可直接跳转
-              </p>
             </div>
             <div className="flex gap-2 pt-2">
               <button
@@ -580,102 +660,44 @@ export function LearningArea() {
         </div>
       )}
 
-      {/* 添加笔记弹窗 */}
-      {showNoteModal && (
+      {/* 添加阶段弹窗 */}
+      {showAddStageModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
-            <h3 className="text-lg font-semibold">添加学习笔记</h3>
-            <textarea
-              value={newNoteContent}
-              onChange={(e) => setNewNoteContent(e.target.value)}
-              placeholder="记录你的学习笔记..."
-              className="w-full h-40 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowNoteModal(null)}
-                className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-secondary transition-all font-medium text-sm"
-              >
-                取消
-              </button>
-              <button
-                onClick={() => addNote(showNoteModal)}
-                className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all font-medium text-sm"
-              >
-                保存
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 添加思考弹窗 */}
-      {showInsightModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
-            <h3 className="text-lg font-semibold">思考与转化</h3>
+            <h3 className="text-lg font-semibold">添加学习阶段</h3>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">类型</label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setNewInsight({ ...newInsight, type: 'thought' })}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    newInsight.type === 'thought'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  💭 思考
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNewInsight({ ...newInsight, type: 'practice' })}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    newInsight.type === 'practice'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  🎯 实践
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNewInsight({ ...newInsight, type: 'summary' })}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    newInsight.type === 'summary'
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  📝 总结
-                </button>
-              </div>
+              <label className="text-sm font-medium mb-1.5 block">阶段名称 *</label>
+              <input
+                type="text"
+                value={newStage.name}
+                onChange={(e) => setNewStage({ ...newStage, name: e.target.value })}
+                placeholder="如：基础入门、进阶提升、实战练习等"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                autoFocus
+              />
             </div>
-            <textarea
-              value={newInsight.content}
-              onChange={(e) => setNewInsight({ ...newInsight, content: e.target.value })}
-              placeholder={
-                newInsight.type === 'thought' ? '记录你的思考和想法...' :
-                newInsight.type === 'practice' ? '记录你的实践计划...' :
-                '记录你的学习总结...'
-              }
-              className="w-full h-32 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-              autoFocus
-            />
-            <div className="flex gap-2">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">阶段描述</label>
+              <input
+                type="text"
+                value={newStage.description}
+                onChange={(e) => setNewStage({ ...newStage, description: e.target.value })}
+                placeholder="描述这个阶段的目标和内容"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
               <button
-                onClick={() => setShowInsightModal(null)}
+                onClick={() => setShowAddStageModal(null)}
                 className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-secondary transition-all font-medium text-sm"
               >
                 取消
               </button>
               <button
-                onClick={() => addInsight(showInsightModal)}
+                onClick={() => addStage(showAddStageModal)}
                 className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all font-medium text-sm"
               >
-                保存
+                添加
               </button>
             </div>
           </div>
