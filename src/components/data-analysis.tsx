@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { TrendingUp, CheckCircle2, BookOpen, MessageSquare, GraduationCap, Calendar } from 'lucide-react';
+import { TrendingUp, CheckCircle2, BookOpen, MessageSquare, GraduationCap, Calendar, DollarSign, Package, FileText, Target, Zap, Award } from 'lucide-react';
 
 interface Todo {
   id: string;
@@ -25,6 +25,7 @@ interface XiaohongshuNote {
   type: 'normal' | 'product';
   publishDate: string;
   stats: { views: number; likes: number; comments: number; shares: number };
+  salesData?: { salesAmount: number; salesVolume: number; promotionCost: number };
   createdAt: number;
 }
 
@@ -52,6 +53,21 @@ interface LearningCategory {
   icon: string;
 }
 
+interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  color: string;
+}
+
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 const COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#EF4444'];
 
 export function DataAnalysis() {
@@ -61,6 +77,8 @@ export function DataAnalysis() {
   const [reviews, setReviews] = useState<ReviewTemplate[]>([]);
   const [learningResources, setLearningResources] = useState<LearningResource[]>([]);
   const [learningCategories, setLearningCategories] = useState<LearningCategory[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -70,6 +88,8 @@ export function DataAnalysis() {
     const storedReviews = localStorage.getItem('review-templates');
     const storedLearningResources = localStorage.getItem('learning-resources');
     const storedLearningCategories = localStorage.getItem('learning-categories');
+    const storedCalendarEvents = localStorage.getItem('calendar-events');
+    const storedNotes = localStorage.getItem('notes');
 
     if (storedTodos) setTodos(JSON.parse(storedTodos));
     if (storedWorkLogs) setWorkLogs(JSON.parse(storedWorkLogs));
@@ -77,27 +97,10 @@ export function DataAnalysis() {
     if (storedReviews) setReviews(JSON.parse(storedReviews));
     if (storedLearningResources) setLearningResources(JSON.parse(storedLearningResources));
     if (storedLearningCategories) setLearningCategories(JSON.parse(storedLearningCategories));
+    if (storedCalendarEvents) setCalendarEvents(JSON.parse(storedCalendarEvents));
+    if (storedNotes) setNotes(JSON.parse(storedNotes));
     setMounted(true);
   }, []);
-
-  if (!mounted) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-semibold mb-2">数据分析</h2>
-          <p className="text-muted-foreground text-sm">全面分析你的工作数据</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="bg-card rounded-xl border border-border p-6 h-64 animate-pulse">
-              <div className="h-4 bg-secondary rounded w-1/3 mb-4"></div>
-              <div className="h-48 bg-secondary rounded"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   // 待办事项分析
   const todoStats = {
@@ -135,6 +138,18 @@ export function DataAnalysis() {
     totalComments: xhsNotes.reduce((sum, n) => sum + n.stats.comments, 0),
     totalShares: xhsNotes.reduce((sum, n) => sum + n.stats.shares, 0),
   };
+
+  // 小红书商品销售分析
+  const productNotes = xhsNotes.filter(n => n.type === 'product' && n.salesData);
+  const salesStats = {
+    totalSalesAmount: productNotes.reduce((sum, n) => sum + (n.salesData?.salesAmount || 0), 0),
+    totalSalesVolume: productNotes.reduce((sum, n) => sum + (n.salesData?.salesVolume || 0), 0),
+    totalPromotionCost: productNotes.reduce((sum, n) => sum + (n.salesData?.promotionCost || 0), 0),
+    overallROI: 0,
+  };
+  salesStats.overallROI = salesStats.totalPromotionCost > 0 
+    ? Math.round((salesStats.totalSalesAmount / salesStats.totalPromotionCost) * 100) / 100 
+    : 0;
 
   // 小红书笔记趋势 - 最近7天
   const getXhsTrend = () => {
@@ -192,22 +207,78 @@ export function DataAnalysis() {
     };
   });
 
+  // 日历/日程分析
+  const calendarStats = {
+    totalEvents: calendarEvents.length,
+    upcomingEvents: calendarEvents.filter(e => new Date(e.date) >= new Date()).length,
+    pastEvents: calendarEvents.filter(e => new Date(e.date) < new Date()).length,
+  };
+
+  // 笔记分析
+  const noteStats = {
+    total: notes.length,
+  };
+
+  // 综合效率评分
+  const efficiencyScore = Math.round(
+    (todoStats.completionRate * 0.3) +
+    (learningStats.avgProgress * 0.3) +
+    (xhsStats.totalViews > 0 ? Math.min(100, xhsStats.totalViews / 100) * 0.2 : 0) +
+    (reviewStats.totalUsage > 0 ? Math.min(100, reviewStats.totalUsage) * 0.2 : 0)
+  );
+
   const workLogTrend = getWorkLogTrend();
   const xhsTrend = getXhsTrend();
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-semibold mb-2">数据分析中心</h2>
+          <p className="text-muted-foreground text-sm">全面分析你的所有工作数据</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-card rounded-xl border border-border p-6 h-64 animate-pulse">
+              <div className="h-4 bg-secondary rounded w-1/3 mb-4"></div>
+              <div className="h-48 bg-secondary rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">数据分析</h2>
-        <p className="text-muted-foreground text-sm">全面分析你的工作数据</p>
+        <h2 className="text-2xl font-semibold mb-2">数据分析中心</h2>
+        <p className="text-muted-foreground text-sm">全面分析你的所有工作数据，洞察效率与成果</p>
+      </div>
+
+      {/* 综合效率评分 */}
+      <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border border-primary/20 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              综合效率评分
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">基于待办完成率、学习进度、小红书数据等综合计算</p>
+          </div>
+          <div className="text-right">
+            <p className="text-4xl font-bold text-primary">{efficiencyScore}</p>
+            <p className="text-xs text-muted-foreground">/ 100 分</p>
+          </div>
+        </div>
       </div>
 
       {/* 概览卡片 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="h-4 w-4 text-primary" />
-            <span className="text-sm text-muted-foreground">待办完成率</span>
+            <span className="text-xs text-muted-foreground">待办完成率</span>
           </div>
           <p className="text-2xl font-bold">{todoStats.completionRate}%</p>
           <p className="text-xs text-muted-foreground mt-1">{todoStats.completed}/{todoStats.total} 项</p>
@@ -215,26 +286,42 @@ export function DataAnalysis() {
         <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-2 mb-2">
             <BookOpen className="h-4 w-4 text-blue-600" />
-            <span className="text-sm text-muted-foreground">小红书总浏览</span>
+            <span className="text-xs text-muted-foreground">小红书浏览</span>
           </div>
           <p className="text-2xl font-bold">{xhsStats.totalViews.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground mt-1">{xhsStats.totalNotes} 篇笔记</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-2 mb-2">
-            <MessageSquare className="h-4 w-4 text-green-600" />
-            <span className="text-sm text-muted-foreground">评价使用次数</span>
+            <DollarSign className="h-4 w-4 text-green-600" />
+            <span className="text-xs text-muted-foreground">总销售额</span>
+          </div>
+          <p className="text-2xl font-bold text-green-600">¥{salesStats.totalSalesAmount.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground mt-1">ROI: {salesStats.overallROI}</p>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare className="h-4 w-4 text-purple-600" />
+            <span className="text-xs text-muted-foreground">评价使用</span>
           </div>
           <p className="text-2xl font-bold">{reviewStats.totalUsage}</p>
           <p className="text-xs text-muted-foreground mt-1">{reviewStats.total} 个模板</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-2 mb-2">
-            <GraduationCap className="h-4 w-4 text-purple-600" />
-            <span className="text-sm text-muted-foreground">学习进度</span>
+            <GraduationCap className="h-4 w-4 text-indigo-600" />
+            <span className="text-xs text-muted-foreground">学习进度</span>
           </div>
           <p className="text-2xl font-bold">{learningStats.avgProgress}%</p>
           <p className="text-xs text-muted-foreground mt-1">{learningStats.completed} 个已完成</p>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="h-4 w-4 text-pink-600" />
+            <span className="text-xs text-muted-foreground">日程安排</span>
+          </div>
+          <p className="text-2xl font-bold">{calendarStats.totalEvents}</p>
+          <p className="text-xs text-muted-foreground mt-1">{calendarStats.upcomingEvents} 个待进行</p>
         </div>
       </div>
 
@@ -312,6 +399,54 @@ export function DataAnalysis() {
               <p className="text-xs text-muted-foreground">商品笔记</p>
             </div>
           </div>
+        </div>
+
+        {/* 商品销售数据分析 */}
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Package className="h-5 w-5 text-green-600" />
+            商品销售数据分析
+          </h3>
+          {productNotes.length > 0 ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                  <p className="text-xs text-muted-foreground">总销售额</p>
+                  <p className="text-xl font-bold text-green-600">¥{salesStats.totalSalesAmount.toLocaleString()}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <p className="text-xs text-muted-foreground">总销量</p>
+                  <p className="text-xl font-bold text-blue-600">{salesStats.totalSalesVolume}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-orange-50 border border-orange-200">
+                  <p className="text-xs text-muted-foreground">推广花费</p>
+                  <p className="text-xl font-bold text-orange-600">¥{salesStats.totalPromotionCost.toLocaleString()}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
+                  <p className="text-xs text-muted-foreground">整体ROI</p>
+                  <p className={`text-xl font-bold ${salesStats.overallROI >= 1 ? 'text-green-600' : 'text-orange-600'}`}>
+                    {salesStats.overallROI}
+                  </p>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-2">ROI说明：销售额 / 推广花费，≥1表示盈利</p>
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-primary" />
+                  <span className="text-sm">
+                    {salesStats.overallROI >= 2 ? '优秀！投入产出比很高' :
+                     salesStats.overallROI >= 1 ? '良好，保持当前策略' :
+                     salesStats.overallROI > 0 ? '需要优化推广策略' :
+                     '暂无有效数据'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
+              暂无商品销售数据
+            </div>
+          )}
         </div>
 
         {/* 评价库分类分布 */}
@@ -417,34 +552,84 @@ export function DataAnalysis() {
             </div>
           </div>
         </div>
+
+        {/* 小红书数据汇总 */}
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-blue-600" />
+            小红书数据汇总
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="text-center p-3 rounded-lg bg-secondary/50">
+              <p className="text-2xl font-bold">{xhsStats.totalNotes}</p>
+              <p className="text-xs text-muted-foreground mt-1">笔记总数</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-secondary/50">
+              <p className="text-2xl font-bold text-blue-600">{xhsStats.totalViews.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">总浏览</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-secondary/50">
+              <p className="text-2xl font-bold text-pink-600">{xhsStats.totalLikes.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">总点赞</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-secondary/50">
+              <p className="text-2xl font-bold text-green-600">{xhsStats.totalComments.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">总评论</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-secondary/50">
+              <p className="text-2xl font-bold text-purple-600">{xhsStats.totalShares.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">总分享</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-secondary/50">
+              <p className="text-2xl font-bold text-primary">
+                {xhsStats.totalNotes > 0 ? Math.round(xhsStats.totalViews / xhsStats.totalNotes) : 0}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">平均浏览</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 小红书详细数据 */}
+      {/* 数据洞察与建议 */}
       <div className="bg-card rounded-xl border border-border p-6">
         <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-blue-600" />
-          小红书数据汇总
+          <Zap className="h-5 w-5 text-primary" />
+          数据洞察与建议
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="text-center p-4 rounded-lg bg-secondary/50">
-            <p className="text-3xl font-bold">{xhsStats.totalNotes}</p>
-            <p className="text-sm text-muted-foreground mt-1">笔记总数</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 rounded-lg bg-secondary/50">
+            <p className="text-sm font-medium mb-2">待办事项</p>
+            <p className="text-xs text-muted-foreground">
+              {todoStats.completionRate >= 80 ? '完成率优秀，继续保持！' :
+               todoStats.completionRate >= 50 ? '完成率良好，还有提升空间' :
+               '完成率偏低，建议优先处理重要任务'}
+            </p>
           </div>
-          <div className="text-center p-4 rounded-lg bg-secondary/50">
-            <p className="text-3xl font-bold text-blue-600">{xhsStats.totalViews.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground mt-1">总浏览</p>
+          <div className="p-4 rounded-lg bg-secondary/50">
+            <p className="text-sm font-medium mb-2">小红书运营</p>
+            <p className="text-xs text-muted-foreground">
+              {xhsStats.totalNotes >= 10 ? '笔记数量充足，关注质量提升' :
+               xhsStats.totalNotes >= 5 ? '笔记数量适中，保持稳定更新' :
+               '建议增加笔记发布频率'}
+            </p>
           </div>
-          <div className="text-center p-4 rounded-lg bg-secondary/50">
-            <p className="text-3xl font-bold text-pink-600">{xhsStats.totalLikes.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground mt-1">总点赞</p>
+          <div className="p-4 rounded-lg bg-secondary/50">
+            <p className="text-sm font-medium mb-2">商品推广</p>
+            <p className="text-xs text-muted-foreground">
+              {salesStats.overallROI >= 2 ? '推广效果优秀，ROI很高' :
+               salesStats.overallROI >= 1 ? '推广效果良好，可以加大投入' :
+               productNotes.length > 0 ? '推广效果需要优化，调整策略' :
+               '暂无商品推广数据'}
+            </p>
           </div>
-          <div className="text-center p-4 rounded-lg bg-secondary/50">
-            <p className="text-3xl font-bold text-green-600">{xhsStats.totalComments.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground mt-1">总评论</p>
-          </div>
-          <div className="text-center p-4 rounded-lg bg-secondary/50">
-            <p className="text-3xl font-bold text-purple-600">{xhsStats.totalShares.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground mt-1">总分享</p>
+          <div className="p-4 rounded-lg bg-secondary/50">
+            <p className="text-sm font-medium mb-2">学习成长</p>
+            <p className="text-xs text-muted-foreground">
+              {learningStats.avgProgress >= 80 ? '学习进度优秀，知识转化良好' :
+               learningStats.avgProgress >= 50 ? '学习进度良好，继续坚持' :
+               learningStats.totalResources > 0 ? '学习进度偏慢，建议制定计划' :
+               '开始添加学习资源吧'}
+            </p>
           </div>
         </div>
       </div>
