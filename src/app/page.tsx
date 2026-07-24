@@ -6,6 +6,7 @@ import { Dashboard } from '@/components/dashboard';
 import { DailyWorkLog } from '@/components/daily-work-log';
 import { XiaohongshuNotes } from '@/components/xiaohongshu-notes';
 import { ReviewTemplates } from '@/components/review-templates';
+import { ViralArticleLibrary } from '@/components/viral-article-library';
 import { LearningArea } from '@/components/learning-area';
 import { DataAnalysis } from '@/components/data-analysis';
 import { ExpenseTracker } from '@/components/expense-tracker';
@@ -14,7 +15,7 @@ import { CalendarView } from '@/components/calendar-view';
 import { QuickNotes } from '@/components/quick-notes';
 import { DailyQuote } from '@/components/daily-quote';
 
-type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'expense' | 'todos' | 'calendar' | 'notes';
+type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'todos' | 'calendar' | 'notes';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -34,6 +35,8 @@ export default function Home() {
         return <XiaohongshuNotes />;
       case 'reviews':
         return <ReviewTemplates />;
+      case 'viral':
+        return <ViralArticleLibrary />;
       case 'learning':
         return <LearningArea />;
       case 'analysis':
