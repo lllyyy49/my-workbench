@@ -10,6 +10,7 @@ interface Reminder {
 }
 
 export default function CharacterWidget() {
+  const [mounted, setMounted] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -24,8 +25,9 @@ export default function CharacterWidget() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
 
-  // Load saved data
+  // Load saved data - only on client
   useEffect(() => {
+    setMounted(true);
     const savedPos = localStorage.getItem("character-position");
     if (savedPos) {
       try {
@@ -170,6 +172,9 @@ export default function CharacterWidget() {
   };
 
   const pendingCount = reminders.filter((r) => !r.done).length;
+
+  // Don't render until mounted (prevents hydration mismatch)
+  if (!mounted) return null;
 
   return (
     <>
