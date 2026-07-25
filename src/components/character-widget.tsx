@@ -196,17 +196,15 @@ export default function CharacterWidget() {
 
         {/* Character Body */}
         <div
-          className="relative w-20 h-20 rounded-full shadow-lg border-2 border-white flex items-center justify-center transition-transform hover:scale-110 overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100"
+          className="relative w-20 h-20 rounded-full shadow-lg border-2 border-white flex items-center justify-center transition-transform hover:scale-110 overflow-hidden bg-gradient-to-br from-teal-50 to-cyan-50"
           onClick={handleClick}
         >
           {characterImage ? (
             <img src={characterImage} alt="角色" className="w-full h-full object-cover" />
           ) : (
-            <div className="text-3xl">
-              {mood === "sleepy" && ""}
-              {mood === "eating" && "😋"}
-              {mood === "working" && ""}
-              {mood === "idle" && "🐱"}
+            <div className="text-center">
+              <div className="text-3xl">🐱</div>
+              <div className="text-[8px] text-gray-400 mt-0.5">点击上传</div>
             </div>
           )}
 
