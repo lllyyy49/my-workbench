@@ -28,7 +28,9 @@ export function ReviewTemplates() {
   const [newImages, setNewImages] = useState<ReviewImage[]>([]);
   const [duplicateWarning, setDuplicateWarning] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('review-templates');
@@ -114,6 +116,89 @@ export function ReviewTemplates() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  // 通用图片处理函数（支持拖拽、粘贴、选择）
+  const processImageFiles = async (files: File[]) => {
+    const warnings: string[] = [];
+    const images: ReviewImage[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) {
+        warnings.push(`"${file.name}" 不是图片文件`);
+        continue;
+      }
+      const hash = await calculateFileHash(file);
+      
+      const duplicateTemplate = checkImageDuplicate(hash);
+      if (duplicateTemplate) {
+        warnings.push(`图片 "${file.name}" 已在评价 "${duplicateTemplate.text.slice(0, 20)}..." 中使用过`);
+        continue;
+      }
+
+      if (images.some(img => img.hash === hash)) {
+        warnings.push(`图片 "${file.name}" 与已选择的图片重复`);
+        continue;
+      }
+
+      const dataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      images.push({
+        id: Date.now().toString() + i,
+        dataUrl,
+        hash,
+        name: file.name,
+      });
+    }
+
+    if (warnings.length > 0) {
+      setDuplicateWarning(warnings.join('\n'));
+    } else {
+      setDuplicateWarning('');
+    }
+
+    setNewImages([...newImages, ...images]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // 拖拽上传处理
+  const [isDragging, setIsDragging] = useState(false);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) processImageFiles(files);
+  };
+
+  // 粘贴上传处理
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    const files: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) files.push(file);
+      }
+    }
+    if (files.length > 0) processImageFiles(files);
   };
 
   const removeImage = (imageId: string) => {
@@ -340,22 +425,51 @@ export function ReviewTemplates() {
               <label className="text-sm font-medium mb-1.5 block">
                 配图（自动检测重复）
               </label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageUpload}
-                className="hidden"
-                id="image-upload"
-              />
-              <label
-                htmlFor="image-upload"
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border bg-background text-sm text-muted-foreground hover:bg-secondary cursor-pointer transition-colors"
+              <div
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                  if (files.length === 0) {
+                    alert('请拖入图片文件');
+                    return;
+                  }
+                  files.forEach(file => {
+                    if (file.size > 5 * 1024 * 1024) {
+                      alert(`文件 ${file.name} 超过 5MB，已跳过`);
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const dataUrl = ev.target?.result as string;
+                      const hash = btoa(dataUrl).slice(0, 32);
+                      setNewImages(prev => [...prev, { id: Date.now().toString() + Math.random(), name: file.name, dataUrl, hash }]);
+                    };
+                    reader.readAsDataURL(file);
+                  });
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors bg-muted/30"
               >
-                <ImageIcon className="h-4 w-4" />
-                选择图片
-              </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <div className="flex flex-col items-center gap-2">
+                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    拖拽图片到此处，或 <label htmlFor="image-upload" className="text-primary cursor-pointer hover:underline">点击选择</label>
+                  </p>
+                  <p className="text-xs text-muted-foreground">支持粘贴图片（Ctrl+V）</p>
+                </div>
+              </div>
               {newImages.length > 0 && (
                 <div className="flex gap-2 flex-wrap mt-3">
                   {newImages.map(img => (

@@ -94,35 +94,72 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
     dragOverItem.current = null;
   };
 
-  // 处理头像上传
+  // 处理头像上传（统一处理）
+  const processAvatarFile = (file: File) => {
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      alert('请上传图片文件（JPG、PNG、GIF等）');
+      return;
+    }
+    // 验证文件大小
+    if (file.size > 5 * 1024 * 1024) {
+      alert('图片大小不能超过5MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setAvatar(result);
+      localStorage.setItem('user-avatar', result);
+      setShowAvatarMenu(false);
+    };
+    reader.onerror = () => {
+      alert('图片读取失败，请重试');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // 验证文件类型
-      if (!file.type.startsWith('image/')) {
-        alert('请上传图片文件（JPG、PNG、GIF等）');
-        return;
-      }
-      // 验证文件大小
-      if (file.size > 5 * 1024 * 1024) {
-        alert('图片大小不能超过5MB');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setAvatar(result);
-        localStorage.setItem('user-avatar', result);
-        setShowAvatarMenu(false);
-      };
-      reader.onerror = () => {
-        alert('图片读取失败，请重试');
-      };
-      reader.readAsDataURL(file);
+      processAvatarFile(file);
     }
     // 重置 input，允许重复上传同一文件
     e.target.value = '';
   };
+
+  // 处理拖拽上传头像
+  const handleAvatarDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      processAvatarFile(file);
+    }
+  };
+
+  const handleAvatarDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  // 处理粘贴上传头像
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (!showAvatarMenu) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            processAvatarFile(file);
+          }
+          break;
+        }
+      }
+    };
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [showAvatarMenu]);
 
   // 删除头像
   const handleRemoveAvatar = () => {
@@ -168,7 +205,11 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
               className="fixed inset-0 z-40" 
               onClick={() => setShowAvatarMenu(false)}
             />
-            <div className="absolute right-0 top-full mt-2 z-50 bg-white rounded-xl shadow-lg border border-gray-100 py-2 min-w-[140px]">
+            <div 
+              className="absolute right-0 top-full mt-2 z-50 bg-white rounded-xl shadow-lg border border-gray-100 py-2 min-w-[180px]"
+              onDrop={handleAvatarDrop}
+              onDragOver={handleAvatarDragOver}
+            >
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 flex items-center gap-2 transition-colors"
@@ -185,6 +226,9 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
                   删除头像
                 </button>
               )}
+              <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-100 mt-1">
+                 支持拖拽或粘贴图片
+              </div>
             </div>
           </>
         )}
