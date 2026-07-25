@@ -56,18 +56,24 @@ export function DailyWorkLog() {
   };
 
   const addItem = () => {
-    if (!newItem.trim()) return;
-    let log = currentLog;
-    if (!log) {
-      log = createLogForDate();
-      if (!log) return;
-    }
+    if (!newItem.trim() || !selectedDate) return;
     const item: WorkItem = {
       id: Date.now().toString(),
       content: newItem.trim(),
       completed: false,
     };
-    setLogs(logs.map(l => l.date === selectedDate ? { ...l, items: [...l.items, item] } : l));
+    if (currentLog) {
+      setLogs(logs.map(l => l.date === selectedDate ? { ...l, items: [...l.items, item] } : l));
+    } else {
+      const newLog: WorkLog = {
+        id: Date.now().toString(),
+        date: selectedDate,
+        items: [item],
+        summary: '',
+        createdAt: Date.now(),
+      };
+      setLogs([newLog, ...logs]);
+    }
     setNewItem('');
   };
 
