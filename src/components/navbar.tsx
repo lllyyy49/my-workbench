@@ -133,16 +133,18 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
+            {/* 左侧标题 */}
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-teal shadow-lg shadow-teal-500/25">
-                <BarChart3 className="h-5 w-5 text-white" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-teal shadow-md shadow-teal-500/20">
+                <BarChart3 className="h-4.5 w-4.5 text-white" />
               </div>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">李月的工作台</h1>
-                <p className="text-xs text-gray-500">效率 · 专注 · 成长</p>
+              <div className="flex flex-col">
+                <h1 className="text-base font-bold text-gray-900 leading-tight">李月的工作台</h1>
+                <p className="text-[10px] text-gray-400 leading-tight">效率 · 专注 · 成长</p>
               </div>
             </div>
-            <nav className="hidden lg:flex items-center gap-1">
+            {/* 中间导航 */}
+            <nav className="hidden lg:flex items-center gap-0.5">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -150,22 +152,19 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
                   <button
                     key={tab.id}
                     onClick={() => onTabChange(tab.id)}
-                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
+                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
-                        ? 'gradient-teal text-white shadow-lg shadow-teal-500/25'
-                        : 'text-gray-500 hover:text-teal-600 hover:bg-teal-50'
+                        ? 'gradient-teal text-white shadow-md shadow-teal-500/20'
+                        : 'text-gray-500 hover:text-teal-600 hover:bg-teal-50/50'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} />
+                    <Icon className={`h-4 w-4 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
                     <span>{tab.label}</span>
-                    {isActive && (
-                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white"></span>
-                    )}
                   </button>
                 );
               })}
             </nav>
-            {/* 桌面端头像 */}
+            {/* 右侧头像 */}
             <div className="hidden lg:block">
               <AvatarComponent size="md" />
             </div>
