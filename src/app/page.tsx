@@ -15,6 +15,7 @@ import { TodoList } from '@/components/todo-list';
 import { CalendarView } from '@/components/calendar-view';
 import { QuickNotes } from '@/components/quick-notes';
 import { DailyQuote } from '@/components/daily-quote';
+import { PasswordProtection } from '@/components/password-protection';
 
 type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'contentReview' | 'todos' | 'calendar' | 'notes';
 
@@ -58,11 +59,13 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="container max-w-7xl mx-auto px-4 md:px-6 py-6 pb-24 lg:pb-6">
-        {renderContent()}
-      </main>
-    </div>
+    <PasswordProtection>
+      <div className="min-h-screen bg-background">
+        <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+        <main className="container max-w-7xl mx-auto px-4 md:px-6 py-6 pb-24 lg:pb-6">
+          {renderContent()}
+        </main>
+      </div>
+    </PasswordProtection>
   );
 }
