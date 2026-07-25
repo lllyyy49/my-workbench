@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash, Lightbulb, Sparkles, Save, Upload, Clipboard, CheckSquare, Square } from 'lucide-react';
+import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash, Lightbulb, Sparkles, Save, Upload, Clipboard, CheckSquare, Square, RotateCcw, RotateCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
+import { useUndoRedo } from '@/hooks/use-undo-redo';
 
 interface ViralArticle {
   id: string;
@@ -36,7 +37,7 @@ const CATEGORIES = [
 ];
 
 export function ViralArticleLibrary() {
-  const [articles, setArticles] = useState<ViralArticle[]>([]);
+  const { state: articles, setState: setArticles, undo, redo, canUndo, canRedo } = useUndoRedo<ViralArticle[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingArticle, setEditingArticle] = useState<ViralArticle | null>(null);
   const [viewingArticle, setViewingArticle] = useState<ViralArticle | null>(null);

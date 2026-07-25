@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal, Camera, User, Target, GripVertical, Thermometer, Film, Settings } from 'lucide-react';
+import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal, Camera, User, Target, GripVertical, Thermometer, Film, Settings, Clock } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
-  onTabChange: (tab: 'dashboard' | 'todos' | 'calendar' | 'notes' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'expense' | 'viral' | 'contentReview' | 'disease' | 'reading' | 'movie') => void;
+  onTabChange: (tab: 'dashboard' | 'todos' | 'calendar' | 'notes' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'expense' | 'viral' | 'contentReview' | 'disease' | 'reading' | 'movie' | 'timeline') => void;
   onOpenSettings?: () => void;
 }
 
@@ -35,6 +35,7 @@ export function Navbar({ activeTab, onTabChange, onOpenSettings }: NavbarProps) 
     { id: 'todos' as const, label: '待办', icon: FileText },
     { id: 'calendar' as const, label: '日历', icon: Calendar },
     { id: 'notes' as const, label: '记事', icon: FileText },
+    { id: 'timeline' as const, label: '时间线', icon: Clock },
   ];
 
   // 从 localStorage 加载标签顺序

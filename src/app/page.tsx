@@ -21,9 +21,10 @@ import CharacterWidget from '@/components/character-widget';
 import ReadingTracker from '@/components/reading-tracker';
 import MovieLibrary from '@/components/movie-library';
 import SettingsPanel from '@/components/settings-panel';
+import TimelineView from '@/components/timeline-view';
 import { startReminderChecker } from '@/lib/notifications';
 
-type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'contentReview' | 'disease' | 'reading' | 'movie' | 'todos' | 'calendar' | 'notes';
+type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'contentReview' | 'disease' | 'reading' | 'movie' | 'todos' | 'calendar' | 'notes' | 'timeline';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -95,6 +96,8 @@ export default function Home() {
         return <CalendarView />;
       case 'notes':
         return <QuickNotes />;
+      case 'timeline':
+        return <TimelineView events={[]} />;
       default:
         return <Dashboard />;
     }

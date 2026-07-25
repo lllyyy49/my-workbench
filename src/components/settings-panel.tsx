@@ -12,9 +12,12 @@ import {
   CheckCircle,
   AlertCircle,
   Bell,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { exportAllData, importAllData, getStorageSize } from '@/lib/data-backup';
 import { requestNotificationPermission } from '@/lib/notifications';
+import { useDarkMode } from '@/hooks/use-dark-mode';
 
 interface GlobalSearchResult {
   module: string;
@@ -24,7 +27,7 @@ interface GlobalSearchResult {
 }
 
 export default function SettingsPanel({ onClose }: { onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<'backup' | 'search'>('backup');
+  const [activeTab, setActiveTab] = useState<'backup' | 'search' | 'appearance'>('backup');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([]);
   const [importStatus, setImportStatus] = useState<{
@@ -34,6 +37,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied'
   );
+  const { isDark, toggle: toggleDark } = useDarkMode();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const storageSize = getStorageSize();
@@ -244,6 +248,17 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
             数据管理
           </button>
           <button
+            onClick={() => setActiveTab('appearance')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'appearance'
+                ? 'text-teal-600 border-b-2 border-teal-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Sun className="w-4 h-4 inline mr-1.5" />
+            外观设置
+          </button>
+          <button
             onClick={() => setActiveTab('search')}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               activeTab === 'search'
@@ -360,6 +375,42 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
                   <li>• 建议定期导出备份，防止数据丢失</li>
                   <li>• 导入会覆盖当前所有数据，请谨慎操作</li>
                   <li>• 清除浏览器缓存会导致数据丢失</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'appearance' && (
+            <div className="space-y-4">
+              {/* Dark Mode Toggle */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-gray-900">深色模式</h4>
+                    <p className="text-sm text-gray-500 mt-1">切换浅色/深色主题</p>
+                  </div>
+                  <button
+                    onClick={toggleDark}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      isDark ? 'bg-teal-500' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        isDark ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Theme Info */}
+              <div className="bg-blue-50 rounded-xl p-4">
+                <h4 className="font-medium text-blue-900 mb-2">主题说明</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• 浅色模式：温暖米白底色，适合白天使用</li>
+                  <li>• 深色模式：深色背景，适合夜间使用，减少眼睛疲劳</li>
+                  <li>• 设置会自动保存，下次打开时保持上次的选择</li>
                 </ul>
               </div>
             </div>

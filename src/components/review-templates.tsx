@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Copy, Check, AlertCircle, Image as ImageIcon, X, Upload, FileText, Clipboard, CheckSquare, Square } from 'lucide-react';
+import { Plus, Trash2, Copy, Check, AlertCircle, Image as ImageIcon, X, Upload, FileText, Clipboard, CheckSquare, Square, RotateCcw, RotateCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
+import { useUndoRedo } from '@/hooks/use-undo-redo';
 
 interface ReviewTemplate {
   id: string;
@@ -23,7 +24,7 @@ interface ReviewImage {
 }
 
 export function ReviewTemplates() {
-  const [templates, setTemplates] = useState<ReviewTemplate[]>([]);
+  const { state: templates, setState: setTemplates, undo, redo, canUndo, canRedo } = useUndoRedo<ReviewTemplate[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newText, setNewText] = useState('');
   const [newCategory, setNewCategory] = useState('');
@@ -395,9 +396,29 @@ export function ReviewTemplates() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold mb-2">商品评价库</h2>
-          <p className="text-muted-foreground text-sm">管理评价模板，自动识别重复内容</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-2xl font-semibold mb-2">商品评价库</h2>
+            <p className="text-muted-foreground text-sm">管理评价模板，自动识别重复内容</p>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              className="p-2 rounded-lg hover:bg-secondary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              title="撤销 (Ctrl+Z)"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              className="p-2 rounded-lg hover:bg-secondary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              title="恢复 (Ctrl+Y)"
+            >
+              <RotateCw className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <div className="flex gap-2">
           {isBatchMode ? (

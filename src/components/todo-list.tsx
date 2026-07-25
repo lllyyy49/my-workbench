@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Check, X, CheckSquare, Square } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, CheckSquare, Square, RotateCcw, RotateCw } from 'lucide-react';
+import { useUndoRedo } from '@/hooks/use-undo-redo';
 
 interface Todo {
   id: string;
@@ -11,7 +12,7 @@ interface Todo {
 }
 
 export function TodoList() {
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const { state: todos, setState: setTodos, undo, redo, canUndo, canRedo } = useUndoRedo<Todo[]>([]);
   const [newTodo, setNewTodo] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -118,9 +119,29 @@ export function TodoList() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold mb-2">待办事项</h2>
-          <p className="text-muted-foreground text-sm">管理你的日常任务</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-2xl font-semibold mb-2">待办事项</h2>
+            <p className="text-muted-foreground text-sm">管理你的日常任务</p>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              className="p-2 rounded-lg hover:bg-secondary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              title="撤销 (Ctrl+Z)"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              className="p-2 rounded-lg hover:bg-secondary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              title="恢复 (Ctrl+Y)"
+            >
+              <RotateCw className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         {isBatchMode ? (
           <div className="flex gap-2">
