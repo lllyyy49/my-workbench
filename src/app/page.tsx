@@ -18,8 +18,10 @@ import { QuickNotes } from '@/components/quick-notes';
 import { DailyQuote } from '@/components/daily-quote';
 import { PasswordProtection } from '@/components/password-protection';
 import CharacterWidget from '@/components/character-widget';
+import ReadingTracker from '@/components/reading-tracker';
+import MovieLibrary from '@/components/movie-library';
 
-type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'contentReview' | 'disease' | 'todos' | 'calendar' | 'notes';
+type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'contentReview' | 'disease' | 'reading' | 'movie' | 'todos' | 'calendar' | 'notes';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -51,6 +53,10 @@ export default function Home() {
         return <ContentReview />;
       case 'disease':
         return <DiseaseTrends />;
+      case 'reading':
+        return <ReadingTracker />;
+      case 'movie':
+        return <MovieLibrary />;
       case 'todos':
         return <TodoList />;
       case 'calendar':
