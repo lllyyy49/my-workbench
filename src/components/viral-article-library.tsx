@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash, Lightbulb, Sparkles, Save, Upload, Clipboard } from 'lucide-react';
+import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash, Lightbulb, Sparkles, Save, Upload, Clipboard, CheckSquare, Square } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
 
@@ -44,6 +44,8 @@ export function ViralArticleLibrary() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [now, setNow] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBatchMode, setIsBatchMode] = useState(false);
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -213,6 +215,42 @@ export function ViralArticleLibrary() {
     if (confirm('确定要删除这篇爆文吗？')) {
       setArticles(articles.filter(a => a.id !== id));
     }
+  };
+
+  // 批量选择切换
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (selectedIds.size === articles.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(articles.map(a => a.id)));
+    }
+  };
+
+  // 批量删除
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (confirm(`确定要删除选中的 ${selectedIds.size} 篇爆文吗？`)) {
+      setArticles(articles.filter(a => !selectedIds.has(a.id)));
+      setSelectedIds(new Set());
+      setIsBatchMode(false);
+    }
+  };
+
+  // 退出批量模式
+  const exitBatchMode = () => {
+    setIsBatchMode(false);
+    setSelectedIds(new Set());
   };
 
   // 文件导入处理（Excel/Word/TXT）- 支持多文件批量导入
@@ -578,14 +616,60 @@ export function ViralArticleLibrary() {
             </select>
           )}
 
-          {/* 添加按钮 */}
-          <button
-            onClick={() => { resetForm(); setShowForm(true); }}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg hover:shadow-md transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>录入爆文</span>
-          </button>
+          {/* 添加按钮和批量操作 */}
+          <div className="flex gap-2">
+            {isBatchMode ? (
+              <>
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm"
+                >
+                  {selectedIds.size === articles.length ? (
+                    <>
+                      <Square className="w-4 h-4" />
+                      <span>取消全选</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare className="w-4 h-4" />
+                      <span>全选</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleBatchDelete}
+                  disabled={selectedIds.size === 0}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>删除 ({selectedIds.size})</span>
+                </button>
+                <button
+                  onClick={exitBatchMode}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm"
+                >
+                  取消
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsBatchMode(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm"
+                >
+                  <CheckSquare className="w-4 h-4" />
+                  <span>批量管理</span>
+                </button>
+                <button
+                  onClick={() => { resetForm(); setShowForm(true); }}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg hover:shadow-md transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>录入爆文</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -596,10 +680,22 @@ export function ViralArticleLibrary() {
           return (
             <div
               key={article.id}
-              className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all"
+              className={`bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all ${isBatchMode && selectedIds.has(article.id) ? 'ring-2 ring-teal-500' : ''}`}
             >
               {/* 头部 */}
               <div className="flex items-start justify-between mb-3">
+                {isBatchMode && (
+                  <button
+                    onClick={() => toggleSelect(article.id)}
+                    className="flex-shrink-0 mr-3 mt-1"
+                  >
+                    {selectedIds.has(article.id) ? (
+                      <CheckSquare className="w-5 h-5 text-teal-500" />
+                    ) : (
+                      <Square className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+                )}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-lg">{categoryInfo.icon}</span>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Copy, Check, AlertCircle, Image as ImageIcon, X, Upload, FileText, Clipboard } from 'lucide-react';
+import { Plus, Trash2, Copy, Check, AlertCircle, Image as ImageIcon, X, Upload, FileText, Clipboard, CheckSquare, Square } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
 
@@ -31,6 +31,8 @@ export function ReviewTemplates() {
   const [duplicateWarning, setDuplicateWarning] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBatchMode, setIsBatchMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -337,6 +339,42 @@ export function ReviewTemplates() {
     setTemplates(templates.filter(t => t.id !== id));
   };
 
+  // 批量选择切换
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (selectedIds.size === templates.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(templates.map(t => t.id)));
+    }
+  };
+
+  // 批量删除
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (confirm(`确定要删除选中的 ${selectedIds.size} 条评价吗？`)) {
+      setTemplates(templates.filter(t => !selectedIds.has(t.id)));
+      setSelectedIds(new Set());
+      setIsBatchMode(false);
+    }
+  };
+
+  // 退出批量模式
+  const exitBatchMode = () => {
+    setIsBatchMode(false);
+    setSelectedIds(new Set());
+  };
+
   const copyTemplate = async (template: ReviewTemplate) => {
     // 复制文字
     await navigator.clipboard.writeText(template.text);
@@ -361,13 +399,59 @@ export function ReviewTemplates() {
           <h2 className="text-2xl font-semibold mb-2">商品评价库</h2>
           <p className="text-muted-foreground text-sm">管理评价模板，自动识别重复内容</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          添加评价
-        </button>
+        <div className="flex gap-2">
+          {isBatchMode ? (
+            <>
+              <button
+                onClick={toggleSelectAll}
+                className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
+              >
+                {selectedIds.size === templates.length ? (
+                  <>
+                    <Square className="h-4 w-4" />
+                    取消全选
+                  </>
+                ) : (
+                  <>
+                    <CheckSquare className="h-4 w-4" />
+                    全选
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleBatchDelete}
+                disabled={selectedIds.size === 0}
+                className="px-4 py-2.5 rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="h-4 w-4" />
+                删除 ({selectedIds.size})
+              </button>
+              <button
+                onClick={exitBatchMode}
+                className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground hover:opacity-90 transition-all text-sm font-medium"
+              >
+                取消
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setIsBatchMode(true)}
+                className="px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
+              >
+                <CheckSquare className="h-4 w-4" />
+                批量管理
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
+              >
+                <Plus className="h-4 w-4" />
+                添加评价
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 统计 */}
@@ -397,8 +481,20 @@ export function ReviewTemplates() {
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">{category}</h3>
                 <div className="space-y-3">
                   {categoryTemplates.map(template => (
-                    <div key={template.id} className="bg-card rounded-xl border border-border p-4 hover:shadow-sm transition-all">
+                    <div key={template.id} className={`bg-card rounded-xl border border-border p-4 hover:shadow-sm transition-all ${isBatchMode && selectedIds.has(template.id) ? 'ring-2 ring-primary' : ''}`}>
                       <div className="flex items-start justify-between gap-3 mb-3">
+                        {isBatchMode && (
+                          <button
+                            onClick={() => toggleSelect(template.id)}
+                            className="flex-shrink-0 mt-0.5"
+                          >
+                            {selectedIds.has(template.id) ? (
+                              <CheckSquare className="h-5 w-5 text-primary" />
+                            ) : (
+                              <Square className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </button>
+                        )}
                         <p className="flex-1 text-sm leading-relaxed whitespace-pre-wrap">{template.text}</p>
                         <div className="flex gap-1 flex-shrink-0">
                           <button

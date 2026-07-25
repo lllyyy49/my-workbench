@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, CheckSquare, Square } from 'lucide-react';
 
 interface Todo {
   id: string;
@@ -15,6 +15,8 @@ export function TodoList() {
   const [newTodo, setNewTodo] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBatchMode, setIsBatchMode] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('todos');
@@ -45,6 +47,42 @@ export function TodoList() {
 
   const deleteTodo = (id: string) => {
     setTodos(todos.filter(t => t.id !== id));
+  };
+
+  // 批量选择切换
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (selectedIds.size === todos.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(todos.map(t => t.id)));
+    }
+  };
+
+  // 批量删除
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (confirm(`确定要删除选中的 ${selectedIds.size} 条待办吗？`)) {
+      setTodos(todos.filter(t => !selectedIds.has(t.id)));
+      setSelectedIds(new Set());
+      setIsBatchMode(false);
+    }
+  };
+
+  // 退出批量模式
+  const exitBatchMode = () => {
+    setIsBatchMode(false);
+    setSelectedIds(new Set());
   };
 
   const startEdit = (todo: Todo) => {
@@ -79,9 +117,53 @@ export function TodoList() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold mb-2">待办事项</h2>
-        <p className="text-muted-foreground text-sm">管理你的日常任务</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold mb-2">待办事项</h2>
+          <p className="text-muted-foreground text-sm">管理你的日常任务</p>
+        </div>
+        {isBatchMode ? (
+          <div className="flex gap-2">
+            <button
+              onClick={toggleSelectAll}
+              className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
+            >
+              {selectedIds.size === todos.length ? (
+                <>
+                  <Square className="h-4 w-4" />
+                  取消全选
+                </>
+              ) : (
+                <>
+                  <CheckSquare className="h-4 w-4" />
+                  全选
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleBatchDelete}
+              disabled={selectedIds.size === 0}
+              className="px-3 py-2 rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="h-4 w-4" />
+              删除 ({selectedIds.size})
+            </button>
+            <button
+              onClick={exitBatchMode}
+              className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground hover:opacity-90 transition-all text-sm font-medium"
+            >
+              取消
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsBatchMode(true)}
+            className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
+          >
+            <CheckSquare className="h-4 w-4" />
+            批量管理
+          </button>
+        )}
       </div>
 
       {/* 添加新任务 */}
@@ -112,12 +194,25 @@ export function TodoList() {
           {pendingTodos.map(todo => (
             <div
               key={todo.id}
-              className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border hover:shadow-sm transition-all group"
+              className={`flex items-center gap-3 p-4 rounded-lg bg-card border border-border hover:shadow-sm transition-all group ${isBatchMode && selectedIds.has(todo.id) ? 'ring-2 ring-primary' : ''}`}
             >
-              <button
-                onClick={() => toggleTodo(todo.id)}
-                className="flex-shrink-0 h-5 w-5 rounded border-2 border-border hover:border-primary transition-colors"
-              />
+              {isBatchMode ? (
+                <button
+                  onClick={() => toggleSelect(todo.id)}
+                  className="flex-shrink-0"
+                >
+                  {selectedIds.has(todo.id) ? (
+                    <CheckSquare className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Square className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={() => toggleTodo(todo.id)}
+                  className="flex-shrink-0 h-5 w-5 rounded border-2 border-border hover:border-primary transition-colors"
+                />
+              )}
               {editingId === todo.id ? (
                 <div className="flex-1 flex gap-2">
                   <input
@@ -168,21 +263,36 @@ export function TodoList() {
           {completedTodos.map(todo => (
             <div
               key={todo.id}
-              className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border opacity-60 hover:opacity-80 transition-all group"
+              className={`flex items-center gap-3 p-4 rounded-lg bg-card border border-border opacity-60 hover:opacity-80 transition-all group ${isBatchMode && selectedIds.has(todo.id) ? 'ring-2 ring-primary opacity-100' : ''}`}
             >
-              <button
-                onClick={() => toggleTodo(todo.id)}
-                className="flex-shrink-0 h-5 w-5 rounded border-2 border-primary bg-primary flex items-center justify-center"
-              >
-                <Check className="h-3 w-3 text-primary-foreground" />
-              </button>
+              {isBatchMode ? (
+                <button
+                  onClick={() => toggleSelect(todo.id)}
+                  className="flex-shrink-0"
+                >
+                  {selectedIds.has(todo.id) ? (
+                    <CheckSquare className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Square className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={() => toggleTodo(todo.id)}
+                  className="flex-shrink-0 h-5 w-5 rounded border-2 border-primary bg-primary flex items-center justify-center"
+                >
+                  <Check className="h-3 w-3 text-primary-foreground" />
+                </button>
+              )}
               <span className="flex-1 text-muted-foreground line-through">{todo.text}</span>
-              <button
-                onClick={() => deleteTodo(todo.id)}
-                className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              {!isBatchMode && (
+                <button
+                  onClick={() => deleteTodo(todo.id)}
+                  className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>
