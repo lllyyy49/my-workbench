@@ -17,6 +17,7 @@ import { CalendarView } from '@/components/calendar-view';
 import { QuickNotes } from '@/components/quick-notes';
 import { DailyQuote } from '@/components/daily-quote';
 import { PasswordProtection } from '@/components/password-protection';
+import CatWidget from '@/components/cat-widget';
 
 type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'contentReview' | 'disease' | 'todos' | 'calendar' | 'notes';
 
@@ -68,6 +69,7 @@ export default function Home() {
         <main className="container max-w-7xl mx-auto px-4 md:px-6 py-6 pb-24 lg:pb-6">
           {renderContent()}
         </main>
+        <CatWidget />
       </div>
     </PasswordProtection>
   );
