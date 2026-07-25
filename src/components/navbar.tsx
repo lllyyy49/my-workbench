@@ -38,20 +38,24 @@ export function Navbar({ activeTab, onTabChange, onOpenSettings }: NavbarProps) 
     { id: 'timeline' as const, label: '时间线', icon: Clock },
   ];
 
-  // 从 localStorage 加载标签顺序
-  const [tabs, setTabs] = useState(() => {
-    if (typeof window === 'undefined') return defaultTabList;
+  // 从 localStorage 加载标签顺序 - 初始化时使用默认值，避免hydration错误
+  const [tabs, setTabs] = useState(defaultTabList);
+
+  // 客户端加载后从 localStorage 读取
+  useEffect(() => {
     const saved = localStorage.getItem('tab-order');
     if (saved) {
       try {
         const savedOrder = JSON.parse(saved) as string[];
-        return savedOrder.map(id => defaultTabList.find(t => t.id === id)).filter((t): t is typeof defaultTabList[0] => t !== undefined);
+        const reorderedTabs = savedOrder.map(id => defaultTabList.find(t => t.id === id)).filter((t): t is typeof defaultTabList[0] => t !== undefined);
+        if (reorderedTabs.length > 0) {
+          setTabs(reorderedTabs);
+        }
       } catch {
-        return defaultTabList;
+        // ignore
       }
     }
-    return defaultTabList;
-  });
+  }, []);
 
   // 从 localStorage 加载头像
   useEffect(() => {
