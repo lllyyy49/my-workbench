@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal, Camera, User, Target, GripVertical } from 'lucide-react';
+import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal, Camera, User, Target, GripVertical, Thermometer } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
-  onTabChange: (tab: 'dashboard' | 'todos' | 'calendar' | 'notes' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'expense' | 'viral' | 'contentReview') => void;
+  onTabChange: (tab: 'dashboard' | 'todos' | 'calendar' | 'notes' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'expense' | 'viral' | 'contentReview' | 'disease') => void;
 }
 
 export function Navbar({ activeTab, onTabChange }: NavbarProps) {
@@ -21,6 +21,7 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const defaultTabList = [
     { id: 'dashboard' as const, label: '工作台', icon: BarChart3 },
     { id: 'analysis' as const, label: '数据分析', icon: TrendingUp },
+    { id: 'disease' as const, label: '病症趋势', icon: Thermometer },
     { id: 'xiaohongshu' as const, label: '小红书', icon: BookOpen },
     { id: 'contentReview' as const, label: '内容复盘', icon: Target },
     { id: 'learning' as const, label: '学习', icon: GraduationCap },

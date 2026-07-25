@@ -11,13 +11,14 @@ import { LearningArea } from '@/components/learning-area';
 import { DataAnalysis } from '@/components/data-analysis';
 import { ExpenseTracker } from '@/components/expense-tracker';
 import { ContentReview } from '@/components/content-review';
+import { DiseaseTrends } from '@/components/disease-trends';
 import { TodoList } from '@/components/todo-list';
 import { CalendarView } from '@/components/calendar-view';
 import { QuickNotes } from '@/components/quick-notes';
 import { DailyQuote } from '@/components/daily-quote';
 import { PasswordProtection } from '@/components/password-protection';
 
-type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'contentReview' | 'todos' | 'calendar' | 'notes';
+type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'contentReview' | 'disease' | 'todos' | 'calendar' | 'notes';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -47,6 +48,8 @@ export default function Home() {
         return <ExpenseTracker />;
       case 'contentReview':
         return <ContentReview />;
+      case 'disease':
+        return <DiseaseTrends />;
       case 'todos':
         return <TodoList />;
       case 'calendar':
