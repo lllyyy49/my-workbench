@@ -98,6 +98,12 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件（JPG、PNG、GIF等）');
+        return;
+      }
+      // 验证文件大小
       if (file.size > 5 * 1024 * 1024) {
         alert('图片大小不能超过5MB');
         return;
@@ -109,8 +115,13 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
         localStorage.setItem('user-avatar', result);
         setShowAvatarMenu(false);
       };
+      reader.onerror = () => {
+        alert('图片读取失败，请重试');
+      };
       reader.readAsDataURL(file);
     }
+    // 重置 input，允许重复上传同一文件
+    e.target.value = '';
   };
 
   // 删除头像
@@ -135,7 +146,16 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
           className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-teal-200 hover:border-teal-400 transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center bg-gradient-to-br from-teal-50 to-emerald-50`}
         >
           {avatar ? (
-            <img src={avatar} alt="头像" className="h-full w-full object-cover" />
+            <img 
+              src={avatar} 
+              alt="头像" 
+              className="h-full w-full object-cover"
+              onError={() => {
+                // 图片加载失败时清除头像
+                setAvatar(null);
+                localStorage.removeItem('user-avatar');
+              }}
+            />
           ) : (
             <User className={`${size === 'sm' ? 'h-4 w-4' : size === 'md' ? 'h-5 w-5' : 'h-6 w-6'} text-teal-500`} />
           )}
