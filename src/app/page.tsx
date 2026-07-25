@@ -75,7 +75,7 @@ export default function Home() {
         <main className="container max-w-7xl mx-auto px-4 md:px-6 py-6 pb-24 lg:pb-6">
           {renderContent()}
         </main>
-        <CharacterWidget reminders={[]} />
+        <CharacterWidget />
       </div>
     </PasswordProtection>
   );
