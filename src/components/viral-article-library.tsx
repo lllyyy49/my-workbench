@@ -8,7 +8,6 @@ interface ViralArticle {
   title: string;
   source: string; // 来源平台
   category: string; // 分类
-  tags: string[]; // 标签
   topics: string[]; // 话题
   content: string; // 爆文内容
   summary: string; // 摘要/亮点
@@ -49,7 +48,6 @@ export function ViralArticleLibrary() {
     title: '',
     source: '',
     category: 'product',
-    tags: '',
     topics: '',
     content: '',
     summary: '',
@@ -78,6 +76,11 @@ export function ViralArticleLibrary() {
     }
   });
 
+  const handleSaveSummary = () => {
+    setSummaryUpdatedAt(new Date().toISOString());
+    setShowSummaryForm(false);
+  };
+
   useEffect(() => {
     const stored = localStorage.getItem('viral-articles');
     if (stored) {
@@ -94,18 +97,18 @@ export function ViralArticleLibrary() {
     localStorage.setItem('viral-summary', summary);
   }, [summary]);
 
-  // 获取所有标签
-  const allTags = Array.from(new Set(articles.flatMap(a => a.tags)));
+  // 获取所有话题
+  const allTopics = Array.from(new Set(articles.flatMap(a => a.topics)));
 
   // 过滤文章
   const filteredArticles = articles.filter(article => {
     const matchesSearch = searchQuery === '' || 
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      article.topics.some(topic => topic.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === '' || article.category === selectedCategory;
-    const matchesTag = selectedTag === '' || article.tags.includes(selectedTag);
-    return matchesSearch && matchesCategory && matchesTag;
+    const matchesTopic = selectedTag === '' || article.topics.includes(selectedTag);
+    return matchesSearch && matchesCategory && matchesTopic;
   });
 
   const resetForm = () => {
@@ -113,7 +116,6 @@ export function ViralArticleLibrary() {
       title: '',
       source: '',
       category: 'product',
-      tags: '',
       topics: '',
       content: '',
       summary: '',
@@ -134,7 +136,6 @@ export function ViralArticleLibrary() {
       return;
     }
 
-    const tagsArray = formData.tags.split(/[,，]/).map(t => t.trim()).filter(t => t);
     const topicsArray = formData.topics.split(/[,，]/).map(t => t.trim()).filter(t => t);
 
     if (editingArticle) {
@@ -143,7 +144,6 @@ export function ViralArticleLibrary() {
         title: formData.title,
         source: formData.source,
         category: formData.category,
-        tags: tagsArray,
         topics: topicsArray,
         content: formData.content,
         summary: formData.summary,
@@ -164,7 +164,6 @@ export function ViralArticleLibrary() {
         title: formData.title,
         source: formData.source,
         category: formData.category,
-        tags: tagsArray,
         topics: topicsArray,
         content: formData.content,
         summary: formData.summary,
@@ -192,7 +191,6 @@ export function ViralArticleLibrary() {
       title: article.title,
       source: article.source,
       category: article.category,
-      tags: article.tags.join(', '),
       content: article.content,
       summary: article.summary,
       link: article.link || '',
@@ -295,10 +293,33 @@ export function ViralArticleLibrary() {
             <span>编辑总结</span>
           </button>
         </div>
-        {summary ? (
+        {showSummaryForm ? (
+          <div className="space-y-3">
+            <textarea
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              className="w-full h-32 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+              placeholder="输入爆文规律总结..."
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveSummary}
+                className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+              >
+                保存
+              </button>
+              <button
+                onClick={() => setShowSummaryForm(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        ) : summary ? (
           <div className="space-y-3">
             <div className="bg-white/80 rounded-lg p-4">
-              <div className="text-sm font-medium text-teal-700 mb-2"> 核心规律</div>
+              <div className="text-sm font-medium text-teal-700 mb-2">核心规律</div>
               <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">{summary}</div>
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-gray-500">
@@ -340,16 +361,16 @@ export function ViralArticleLibrary() {
             ))}
           </select>
 
-          {/* 标签筛选 */}
-          {allTags.length > 0 && (
+          {/* 话题筛选 */}
+          {allTopics.length > 0 && (
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
               className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
             >
-              <option value="">全部标签</option>
-              {allTags.map(tag => (
-                <option key={tag} value={tag}>#{tag}</option>
+              <option value="">全部话题</option>
+              {allTopics.map(topic => (
+                <option key={topic} value={topic}>#{topic}</option>
               ))}
             </select>
           )}
@@ -413,20 +434,6 @@ export function ViralArticleLibrary() {
               {/* 摘要 */}
               {article.summary && (
                 <p className="text-sm text-gray-600 line-clamp-2 mb-3">{article.summary}</p>
-              )}
-
-              {/* 标签 */}
-              {article.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {article.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="text-xs px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
               )}
 
               {/* 数据指标 */}
@@ -527,18 +534,6 @@ export function ViralArticleLibrary() {
                     ))}
                   </select>
                 </div>
-              </div>
-
-              {/* 标签 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">标签（用逗号分隔）</label>
-                <input
-                  type="text"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="如：医疗器械, 爆款, 推广"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                />
               </div>
 
               {/* 话题 */}
@@ -786,25 +781,17 @@ export function ViralArticleLibrary() {
                 <h3 className="text-xl font-bold text-gray-900">{viewingArticle.title}</h3>
               </div>
 
-              {/* 标签 */}
-              {viewingArticle.tags.length > 0 && (
+              {/* 话题 */}
+              {viewingArticle.topics && viewingArticle.topics.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {viewingArticle.tags.map(tag => (
+                  {viewingArticle.topics.map((topic, index) => (
                     <span
-                      key={tag}
+                      key={index}
                       className="text-sm px-3 py-1 bg-teal-50 text-teal-700 rounded-full"
                     >
-                      #{tag}
+                      #{topic}
                     </span>
                   ))}
-                </div>
-              )}
-
-              {/* 话题 */}
-              {viewingArticle.topics && (
-                <div className="flex items-center gap-2 text-sm text-teal-600">
-                  <Hash className="w-4 h-4" />
-                  <span>{viewingArticle.topics}</span>
                 </div>
               )}
 
@@ -960,21 +947,21 @@ export function ViralArticleLibrary() {
             </div>
           </div>
 
-          {/* 高频标签 */}
+          {/* 高频话题 */}
           <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
-            <div className="text-sm text-gray-500 mb-2">高频标签 TOP5</div>
+            <div className="text-sm text-gray-500 mb-2">高频话题 TOP5</div>
             <div className="flex flex-wrap gap-2">
               {(() => {
-                const tagCount: Record<string, number> = {};
+                const topicCount: Record<string, number> = {};
                 articles.forEach(a => {
-                  a.tags.forEach(t => { tagCount[t] = (tagCount[t] || 0) + 1; });
+                  a.topics.forEach(t => { topicCount[t] = (topicCount[t] || 0) + 1; });
                 });
-                return Object.entries(tagCount)
+                return Object.entries(topicCount)
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 5)
-                  .map(([tag, count]) => (
-                    <span key={tag} className="text-sm px-3 py-1 bg-teal-50 text-teal-700 rounded-full">
-                      #{tag} ({count})
+                  .map(([topic, count]) => (
+                    <span key={topic} className="text-sm px-3 py-1 bg-teal-50 text-teal-700 rounded-full">
+                      #{topic} ({count})
                     </span>
                   ));
               })()}
