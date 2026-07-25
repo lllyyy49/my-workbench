@@ -207,50 +207,80 @@ export function ReviewTemplates() {
     setNewImages(newImages.filter(img => img.id !== imageId));
   };
 
-  // 文件导入处理（Excel/Word/WPS）
+  // 文件导入处理（Excel/Word/WPS）- 支持多文件批量导入
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    const fileName = file.name.toLowerCase();
-    let content = '';
+    const allTexts: string[] = [];
 
     try {
-      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-        // 解析 Excel 文件
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data);
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json<string[]>(firstSheet, { header: 1 });
-        
-        // 提取所有非空单元格内容
-        const texts: string[] = [];
-        jsonData.forEach(row => {
-          row.forEach(cell => {
-            if (cell && String(cell).trim()) {
-              texts.push(String(cell).trim());
-            }
+      for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
+        const file = files[fileIndex];
+        const fileName = file.name.toLowerCase();
+        let content = '';
+
+        if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+          // 解析 Excel 文件
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data);
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json<string[]>(firstSheet, { header: 1 });
+          
+          // 提取所有非空单元格内容
+          jsonData.forEach(row => {
+            row.forEach(cell => {
+              if (cell && String(cell).trim()) {
+                allTexts.push(String(cell).trim());
+              }
+            });
           });
-        });
-        content = texts.join('\n');
-      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-        // 解析 Word 文件
-        const data = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer: data });
-        content = result.value;
-      } else if (fileName.endsWith('.txt')) {
-        // 解析文本文件
-        content = await file.text();
-      } else {
-        alert('不支持的文件格式，请上传 Excel(.xlsx/.xls)、Word(.docx/.doc) 或文本(.txt) 文件');
-        return;
+        } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+          // 解析 Word 文件
+          const data = await file.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer: data });
+          content = result.value;
+          const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
+          allTexts.push(...paragraphs);
+        } else if (fileName.endsWith('.txt')) {
+          // 解析文本文件
+          content = await file.text();
+          const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
+          allTexts.push(...paragraphs);
+        } else {
+          alert(`不支持的文件格式：${file.name}，请上传 Excel(.xlsx/.xls)、Word(.docx/.doc) 或文本(.txt) 文件`);
+          continue;
+        }
       }
 
-      if (content.trim()) {
-        setNewText(content.trim());
+      if (allTexts.length > 0) {
+        // 批量添加评价
+        const newTemplates: ReviewTemplate[] = [];
+        for (const text of allTexts) {
+          // 检查是否重复
+          const duplicate = checkTextDuplicate(text);
+          if (!duplicate) {
+            newTemplates.push({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              text: text,
+              images: [],
+              category: newCategory.trim() || '未分类',
+              usedCount: 0,
+              lastUsed: null,
+              createdAt: Date.now(),
+            });
+          }
+        }
+        
+        if (newTemplates.length > 0) {
+          setTemplates([...newTemplates, ...templates]);
+          alert(`成功导入 ${newTemplates.length} 条评价`);
+        } else {
+          alert('所有评价内容均已存在，无需重复添加');
+        }
         setDuplicateWarning('');
       } else {
-        alert('文件中没有找到文本内容');
+        alert('文件中没有找到有效的文本内容');
       }
     } catch (error) {
       console.error('文件解析错误:', error);
@@ -465,10 +495,11 @@ export function ReviewTemplates() {
               <div className="flex gap-2 mb-2">
                 <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border hover:bg-secondary transition-colors cursor-pointer text-sm">
                   <Upload className="h-4 w-4" />
-                  <span>导入文件</span>
+                  <span>批量导入</span>
                   <input
                     type="file"
                     accept=".xlsx,.xls,.docx,.doc,.txt"
+                    multiple
                     onChange={handleFileImport}
                     className="hidden"
                   />
@@ -481,7 +512,7 @@ export function ReviewTemplates() {
                   <span>一键粘贴</span>
                 </button>
                 <span className="flex items-center text-xs text-muted-foreground">
-                  支持 Excel、Word、TXT 文件
+                  支持多文件批量导入
                 </span>
               </div>
               

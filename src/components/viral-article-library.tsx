@@ -215,55 +215,178 @@ export function ViralArticleLibrary() {
     }
   };
 
-  // 文件导入处理（Excel/Word/TXT）
+  // 文件导入处理（Excel/Word/TXT）- 支持多文件批量导入
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    const fileName = file.name.toLowerCase();
-    let content = '';
+    const allArticles: Partial<ViralArticle>[] = [];
 
     try {
-      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-        // 解析 Excel 文件
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data);
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json<string[]>(firstSheet, { header: 1 });
-        
-        // 提取所有非空单元格内容
-        const texts: string[] = [];
-        jsonData.forEach(row => {
-          row.forEach(cell => {
-            if (cell && String(cell).trim()) {
-              texts.push(String(cell).trim());
+      for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
+        const file = files[fileIndex];
+        const fileName = file.name.toLowerCase();
+        let content = '';
+
+        if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+          // 解析 Excel 文件
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data);
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json<string[]>(firstSheet, { header: 1 });
+          
+          // 尝试识别表头
+          let headerRow: string[] = [];
+          let dataStartRow = 0;
+          
+          if (jsonData.length > 0) {
+            const firstRow = jsonData[0].map(cell => String(cell).toLowerCase().trim());
+            // 检查是否包含常见表头关键词
+            if (firstRow.some(cell => cell.includes('标题') || cell.includes('title') || cell.includes('内容') || cell.includes('content'))) {
+              headerRow = firstRow;
+              dataStartRow = 1;
             }
+          }
+
+          // 按行解析，每行是一条记录
+          for (let i = dataStartRow; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.every(cell => !cell || !String(cell).trim())) continue;
+
+            const article: Partial<ViralArticle> = {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              title: '',
+              content: '',
+              source: '',
+              category: 'other',
+              topics: [],
+              images: [],
+              notes: '',
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            };
+
+            // 根据表头或位置映射字段
+            if (headerRow.length > 0) {
+              headerRow.forEach((header, index) => {
+                const value = row[index] ? String(row[index]).trim() : '';
+                if (!value) return;
+                
+                if (header.includes('标题') || header.includes('title')) {
+                  article.title = value;
+                } else if (header.includes('内容') || header.includes('content') || header.includes('正文')) {
+                  article.content = value;
+                } else if (header.includes('来源') || header.includes('source') || header.includes('平台')) {
+                  article.source = value;
+                } else if (header.includes('分类') || header.includes('category')) {
+                  const cat = CATEGORIES.find(c => c.label === value || c.value === value);
+                  if (cat) article.category = cat.value;
+                } else if (header.includes('话题') || header.includes('topic') || header.includes('标签')) {
+                  article.topics = value.split(/[,，\s]+/).filter(t => t);
+                } else if (header.includes('摘要') || header.includes('summary') || header.includes('亮点')) {
+                  article.summary = value;
+                } else if (header.includes('链接') || header.includes('link') || header.includes('url')) {
+                  article.link = value;
+                } else if (header.includes('浏览') || header.includes('views')) {
+                  article.metrics = { ...article.metrics, views: parseInt(value) || 0 };
+                } else if (header.includes('点赞') || header.includes('likes')) {
+                  article.metrics = { ...article.metrics, likes: parseInt(value) || 0 };
+                } else if (header.includes('评论') || header.includes('comments')) {
+                  article.metrics = { ...article.metrics, comments: parseInt(value) || 0 };
+                } else if (header.includes('分享') || header.includes('shares')) {
+                  article.metrics = { ...article.metrics, shares: parseInt(value) || 0 };
+                } else if (header.includes('笔记') || header.includes('notes') || header.includes('分析')) {
+                  article.notes = value;
+                }
+              });
+            } else {
+              // 没有表头时，按位置映射：标题、内容、来源、分类...
+              if (row[0]) article.title = String(row[0]).trim();
+              if (row[1]) article.content = String(row[1]).trim();
+              if (row[2]) article.source = String(row[2]).trim();
+              if (row[3]) {
+                const cat = CATEGORIES.find(c => c.label === String(row[3]).trim() || c.value === String(row[3]).trim());
+                if (cat) article.category = cat.value;
+              }
+              if (row[4]) article.topics = String(row[4]).split(/[,，\s]+/).filter(t => t);
+            }
+
+            // 只有标题或内容不为空时才添加
+            if (article.title || article.content) {
+              allArticles.push(article);
+            }
+          }
+        } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+          // 解析 Word 文件
+          const data = await file.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer: data });
+          content = result.value;
+
+          // 按段落分割，尝试识别多条记录
+          const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
+          
+          paragraphs.forEach(para => {
+            const lines = para.split('\n').filter(l => l.trim());
+            if (lines.length === 0) return;
+
+            const article: Partial<ViralArticle> = {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              title: lines[0].trim(),
+              content: para.trim(),
+              source: '',
+              category: 'other',
+              topics: [],
+              images: [],
+              notes: '',
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            };
+
+            allArticles.push(article);
           });
-        });
-        content = texts.join('\n');
-      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-        // 解析 Word 文件
-        const data = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer: data });
-        content = result.value;
-      } else if (fileName.endsWith('.txt')) {
-        // 解析文本文件
-        content = await file.text();
-      } else {
-        alert('不支持的文件格式，请上传 Excel(.xlsx/.xls)、Word(.docx/.doc) 或文本(.txt) 文件');
-        return;
+        } else if (fileName.endsWith('.txt')) {
+          // 解析文本文件
+          content = await file.text();
+
+          // 按分隔符分割（支持 ---、===、或连续空行）
+          const records = content.split(/(?:---+|===+|\n\s*\n)/).filter(r => r.trim());
+          
+          records.forEach(record => {
+            const lines = record.split('\n').filter(l => l.trim());
+            if (lines.length === 0) return;
+
+            const article: Partial<ViralArticle> = {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              title: lines[0].trim(),
+              content: record.trim(),
+              source: '',
+              category: 'other',
+              topics: [],
+              images: [],
+              notes: '',
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            };
+
+            allArticles.push(article);
+          });
+        } else {
+          alert(`不支持的文件格式：${file.name}，请上传 Excel(.xlsx/.xls)、Word(.docx/.doc) 或文本(.txt) 文件`);
+          continue;
+        }
       }
 
-      if (content.trim()) {
-        // 尝试从内容中提取标题（第一行）
-        const lines = content.split('\n').filter(l => l.trim());
-        if (lines.length > 0) {
-          setFormData({ ...formData, title: lines[0].trim(), content: content.trim() });
-        } else {
-          setFormData({ ...formData, content: content.trim() });
-        }
+      if (allArticles.length > 0) {
+        // 批量添加到列表
+        const newArticles = allArticles.map(a => ({
+          ...a,
+          metrics: a.metrics || { views: 0, likes: 0, comments: 0, shares: 0 },
+        })) as ViralArticle[];
+        
+        setArticles([...newArticles, ...articles]);
+        alert(`成功导入 ${allArticles.length} 条爆文记录`);
       } else {
-        alert('文件中没有找到文本内容');
+        alert('文件中没有找到有效的记录');
       }
     } catch (error) {
       console.error('文件解析错误:', error);
@@ -586,10 +709,11 @@ export function ViralArticleLibrary() {
                 <div className="flex gap-2 mb-2">
                   <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer text-sm">
                     <Upload className="h-4 w-4" />
-                    <span>导入文件</span>
+                    <span>批量导入</span>
                     <input
                       type="file"
                       accept=".xlsx,.xls,.docx,.doc,.txt"
+                      multiple
                       onChange={handleFileImport}
                       className="hidden"
                     />
@@ -602,7 +726,7 @@ export function ViralArticleLibrary() {
                     <span>一键粘贴</span>
                   </button>
                   <span className="flex items-center text-xs text-gray-500">
-                    支持 Excel、Word、TXT 文件
+                    支持多文件批量导入
                   </span>
                 </div>
                 
