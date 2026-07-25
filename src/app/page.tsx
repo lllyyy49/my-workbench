@@ -18,6 +18,7 @@ import { QuickNotes } from '@/components/quick-notes';
 import { DailyQuote } from '@/components/daily-quote';
 import { PasswordProtection } from '@/components/password-protection';
 import CatWidget from '@/components/cat-widget';
+import CharacterWidget from '@/components/character-widget';
 
 type TabType = 'dashboard' | 'worklog' | 'xiaohongshu' | 'reviews' | 'viral' | 'learning' | 'analysis' | 'expense' | 'contentReview' | 'disease' | 'todos' | 'calendar' | 'notes';
 
@@ -70,6 +71,7 @@ export default function Home() {
           {renderContent()}
         </main>
         <CatWidget />
+        <CharacterWidget reminders={[]} />
       </div>
     </PasswordProtection>
   );
