@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash, Lightbulb, Sparkles, Save } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash, Lightbulb, Sparkles, Save, Upload, Clipboard } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import mammoth from 'mammoth';
 
 interface ViralArticle {
   id: string;
@@ -210,6 +212,84 @@ export function ViralArticleLibrary() {
   const handleDelete = (id: string) => {
     if (confirm('确定要删除这篇爆文吗？')) {
       setArticles(articles.filter(a => a.id !== id));
+    }
+  };
+
+  // 文件导入处理（Excel/Word/TXT）
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    let content = '';
+
+    try {
+      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        // 解析 Excel 文件
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json<string[]>(firstSheet, { header: 1 });
+        
+        // 提取所有非空单元格内容
+        const texts: string[] = [];
+        jsonData.forEach(row => {
+          row.forEach(cell => {
+            if (cell && String(cell).trim()) {
+              texts.push(String(cell).trim());
+            }
+          });
+        });
+        content = texts.join('\n');
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        // 解析 Word 文件
+        const data = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: data });
+        content = result.value;
+      } else if (fileName.endsWith('.txt')) {
+        // 解析文本文件
+        content = await file.text();
+      } else {
+        alert('不支持的文件格式，请上传 Excel(.xlsx/.xls)、Word(.docx/.doc) 或文本(.txt) 文件');
+        return;
+      }
+
+      if (content.trim()) {
+        // 尝试从内容中提取标题（第一行）
+        const lines = content.split('\n').filter(l => l.trim());
+        if (lines.length > 0) {
+          setFormData({ ...formData, title: lines[0].trim(), content: content.trim() });
+        } else {
+          setFormData({ ...formData, content: content.trim() });
+        }
+      } else {
+        alert('文件中没有找到文本内容');
+      }
+    } catch (error) {
+      console.error('文件解析错误:', error);
+      alert('文件解析失败，请检查文件格式');
+    }
+
+    // 清空 input 值，允许重复选择同一文件
+    e.target.value = '';
+  };
+
+  // 粘贴文本处理
+  const handleTextPaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) {
+        // 尝试从内容中提取标题（第一行）
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length > 0) {
+          setFormData({ ...formData, title: lines[0].trim(), content: text.trim() });
+        } else {
+          setFormData({ ...formData, content: text.trim() });
+        }
+      }
+    } catch (error) {
+      console.error('粘贴失败:', error);
+      alert('无法读取剪贴板内容，请手动粘贴');
     }
   };
 
@@ -501,11 +581,36 @@ export function ViralArticleLibrary() {
               {/* 标题 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">标题 *</label>
+                
+                {/* 文件导入和粘贴按钮 */}
+                <div className="flex gap-2 mb-2">
+                  <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer text-sm">
+                    <Upload className="h-4 w-4" />
+                    <span>导入文件</span>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.docx,.doc,.txt"
+                      onChange={handleFileImport}
+                      className="hidden"
+                    />
+                  </label>
+                  <button
+                    onClick={handleTextPaste}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm"
+                  >
+                    <Clipboard className="h-4 w-4" />
+                    <span>一键粘贴</span>
+                  </button>
+                  <span className="flex items-center text-xs text-gray-500">
+                    支持 Excel、Word、TXT 文件
+                  </span>
+                </div>
+                
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="爆文标题"
+                  placeholder="爆文标题（导入文件后自动填充）"
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 />
               </div>
