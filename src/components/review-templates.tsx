@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Copy, Check, AlertCircle, Image as ImageIcon, X } from 'lucide-react';
+import { Plus, Trash2, Copy, Check, AlertCircle, Image as ImageIcon, X, Upload, FileText, Clipboard } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import mammoth from 'mammoth';
 
 interface ReviewTemplate {
   id: string;
@@ -205,6 +207,74 @@ export function ReviewTemplates() {
     setNewImages(newImages.filter(img => img.id !== imageId));
   };
 
+  // 文件导入处理（Excel/Word/WPS）
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    let content = '';
+
+    try {
+      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        // 解析 Excel 文件
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json<string[]>(firstSheet, { header: 1 });
+        
+        // 提取所有非空单元格内容
+        const texts: string[] = [];
+        jsonData.forEach(row => {
+          row.forEach(cell => {
+            if (cell && String(cell).trim()) {
+              texts.push(String(cell).trim());
+            }
+          });
+        });
+        content = texts.join('\n');
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        // 解析 Word 文件
+        const data = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: data });
+        content = result.value;
+      } else if (fileName.endsWith('.txt')) {
+        // 解析文本文件
+        content = await file.text();
+      } else {
+        alert('不支持的文件格式，请上传 Excel(.xlsx/.xls)、Word(.docx/.doc) 或文本(.txt) 文件');
+        return;
+      }
+
+      if (content.trim()) {
+        setNewText(content.trim());
+        setDuplicateWarning('');
+      } else {
+        alert('文件中没有找到文本内容');
+      }
+    } catch (error) {
+      console.error('文件解析错误:', error);
+      alert('文件解析失败，请检查文件格式');
+    }
+
+    // 清空 input 值，允许重复选择同一文件
+    e.target.value = '';
+  };
+
+  // 粘贴文本处理
+  const handleTextPaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) {
+        setNewText(text.trim());
+        setDuplicateWarning('');
+      }
+    } catch (error) {
+      console.error('粘贴失败:', error);
+      alert('无法读取剪贴板内容，请手动粘贴');
+    }
+  };
+
   const addTemplate = () => {
     if (!newText.trim()) return;
 
@@ -390,6 +460,31 @@ export function ReviewTemplates() {
 
             <div>
               <label className="text-sm font-medium mb-1.5 block">评价内容 *</label>
+              
+              {/* 文件导入和粘贴按钮 */}
+              <div className="flex gap-2 mb-2">
+                <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border hover:bg-secondary transition-colors cursor-pointer text-sm">
+                  <Upload className="h-4 w-4" />
+                  <span>导入文件</span>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.docx,.doc,.txt"
+                    onChange={handleFileImport}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  onClick={handleTextPaste}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border hover:bg-secondary transition-colors text-sm"
+                >
+                  <Clipboard className="h-4 w-4" />
+                  <span>一键粘贴</span>
+                </button>
+                <span className="flex items-center text-xs text-muted-foreground">
+                  支持 Excel、Word、TXT 文件
+                </span>
+              </div>
+              
               <textarea
                 value={newText}
                 onChange={(e) => {
@@ -404,7 +499,7 @@ export function ReviewTemplates() {
                     }
                   }
                 }}
-                placeholder="输入评价内容..."
+                placeholder="输入评价内容，或从文件导入/粘贴..."
                 className="w-full h-32 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
                 autoFocus
               />
