@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inspector } from 'react-dev-inspector';
 import './globals.css';
+import { ServiceWorkerRegistration } from '@/components/service-worker-registration';
 
 export const metadata: Metadata = {
   title: '李月的工作台',
@@ -30,7 +31,13 @@ export default function RootLayout({
 
   return (
     <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      </head>
       <body className={`antialiased`}>
+        <ServiceWorkerRegistration />
         {isDev && <Inspector />}
         {children}
       </body>
