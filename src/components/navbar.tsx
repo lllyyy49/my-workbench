@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal, Camera, User, Target, GripVertical, Thermometer, Film } from 'lucide-react';
+import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal, Camera, User, Target, GripVertical, Thermometer, Film, Settings } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
   onTabChange: (tab: 'dashboard' | 'todos' | 'calendar' | 'notes' | 'worklog' | 'xiaohongshu' | 'reviews' | 'learning' | 'analysis' | 'expense' | 'viral' | 'contentReview' | 'disease' | 'reading' | 'movie') => void;
+  onOpenSettings?: () => void;
 }
 
-export function Navbar({ activeTab, onTabChange }: NavbarProps) {
+export function Navbar({ activeTab, onTabChange, onOpenSettings }: NavbarProps) {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
@@ -304,7 +305,14 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
               </button>
             </nav>
             {/* 右侧头像 */}
-            <div className="hidden lg:block">
+            <div className="hidden lg:flex items-center gap-2">
+              <button
+                onClick={onOpenSettings}
+                className="p-2 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all duration-200"
+                title="设置 (Ctrl+,)"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
               <AvatarComponent size="md" />
             </div>
           </div>
@@ -353,6 +361,13 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
             <span className="text-xs font-medium">更多</span>
           </button>
           {/* 移动端头像 */}
+          <button
+            onClick={onOpenSettings}
+            className="p-1.5 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all duration-200"
+            title="设置"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
           <AvatarComponent size="sm" />
         </div>
       </nav>
