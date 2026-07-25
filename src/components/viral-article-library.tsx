@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen } from 'lucide-react';
+import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash } from 'lucide-react';
 
 interface ViralArticle {
   id: string;
@@ -9,9 +9,11 @@ interface ViralArticle {
   source: string; // 来源平台
   category: string; // 分类
   tags: string[]; // 标签
+  topics: string[]; // 话题
   content: string; // 爆文内容
   summary: string; // 摘要/亮点
   link?: string; // 原文链接
+  images: string[]; // 图片
   metrics?: {
     views?: number;
     likes?: number;
@@ -48,6 +50,7 @@ export function ViralArticleLibrary() {
     source: '',
     category: 'product',
     tags: '',
+    topics: '',
     content: '',
     summary: '',
     link: '',
@@ -56,7 +59,9 @@ export function ViralArticleLibrary() {
     comments: '',
     shares: '',
     notes: '',
+    images: [] as string[],
   });
+  const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('viral-articles');
@@ -90,6 +95,7 @@ export function ViralArticleLibrary() {
       source: '',
       category: 'product',
       tags: '',
+      topics: '',
       content: '',
       summary: '',
       link: '',
@@ -98,6 +104,7 @@ export function ViralArticleLibrary() {
       comments: '',
       shares: '',
       notes: '',
+      images: [],
     });
     setEditingArticle(null);
   };
@@ -109,6 +116,7 @@ export function ViralArticleLibrary() {
     }
 
     const tagsArray = formData.tags.split(/[,，]/).map(t => t.trim()).filter(t => t);
+    const topicsArray = formData.topics.split(/[,，]/).map(t => t.trim()).filter(t => t);
 
     if (editingArticle) {
       setArticles(articles.map(a => a.id === editingArticle.id ? {
@@ -117,9 +125,11 @@ export function ViralArticleLibrary() {
         source: formData.source,
         category: formData.category,
         tags: tagsArray,
+        topics: topicsArray,
         content: formData.content,
         summary: formData.summary,
         link: formData.link || undefined,
+        images: formData.images,
         metrics: {
           views: formData.views ? parseInt(formData.views) : undefined,
           likes: formData.likes ? parseInt(formData.likes) : undefined,
@@ -136,9 +146,11 @@ export function ViralArticleLibrary() {
         source: formData.source,
         category: formData.category,
         tags: tagsArray,
+        topics: topicsArray,
         content: formData.content,
         summary: formData.summary,
         link: formData.link || undefined,
+        images: formData.images,
         metrics: {
           views: formData.views ? parseInt(formData.views) : undefined,
           likes: formData.likes ? parseInt(formData.likes) : undefined,
@@ -170,6 +182,8 @@ export function ViralArticleLibrary() {
       comments: article.metrics?.comments?.toString() || '',
       shares: article.metrics?.shares?.toString() || '',
       notes: article.notes,
+      images: article.images || [],
+      topics: article.topics?.join(', ') || '',
     });
     setEditingArticle(article);
     setShowForm(true);
@@ -475,6 +489,19 @@ export function ViralArticleLibrary() {
                 />
               </div>
 
+              {/* 话题 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">话题标签</label>
+                <input
+                  type="text"
+                  value={formData.topics}
+                  onChange={(e) => setFormData({ ...formData, topics: e.target.value })}
+                  placeholder="如：#医疗器械 #爆款笔记 #推广技巧"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">多个话题用空格分隔</p>
+              </div>
+
               {/* 原文链接 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">原文链接</label>
@@ -509,6 +536,95 @@ export function ViralArticleLibrary() {
                   rows={8}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
                 />
+              </div>
+
+              {/* 图片上传 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">爆文图片</label>
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                    isDragOver ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-teal-300'
+                  }`}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(false);
+                    const files = Array.from(e.dataTransfer.files);
+                    files.forEach(file => {
+                      if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          if (ev.target?.result) {
+                            setFormData(prev => ({
+                              ...prev,
+                              images: [...prev.images, ev.target!.result as string]
+                            }));
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    });
+                  }}
+                >
+                  <Image className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-600 mb-1">拖拽图片到此处，或点击选择</p>
+                  <p className="text-xs text-gray-400">支持 JPG、PNG、GIF 格式</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (files) {
+                        Array.from(files).forEach(file => {
+                          if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              if (ev.target?.result) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  images: [...prev.images, ev.target!.result as string]
+                                }));
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        });
+                      }
+                    }}
+                    className="hidden"
+                    id="article-images-upload"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('article-images-upload')?.click()}
+                    className="mt-3 px-4 py-1.5 text-sm bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+                  >
+                    选择图片
+                  </button>
+                </div>
+
+                {/* 图片预览 */}
+                {formData.images.length > 0 && (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {formData.images.map((img, idx) => (
+                      <div key={idx} className="relative group">
+                        <img src={img} alt={`图片${idx + 1}`} className="w-full h-24 object-cover rounded-lg" />
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({
+                            ...prev,
+                            images: prev.images.filter((_, i) => i !== idx)
+                          }))}
+                          className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 数据指标 */}
@@ -632,6 +748,14 @@ export function ViralArticleLibrary() {
                 </div>
               )}
 
+              {/* 话题 */}
+              {viewingArticle.topics && (
+                <div className="flex items-center gap-2 text-sm text-teal-600">
+                  <Hash className="w-4 h-4" />
+                  <span>{viewingArticle.topics}</span>
+                </div>
+              )}
+
               {/* 数据指标 */}
               {viewingArticle.metrics && (viewingArticle.metrics.views || viewingArticle.metrics.likes) && (
                 <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl">
@@ -677,6 +801,18 @@ export function ViralArticleLibrary() {
                   {viewingArticle.content}
                 </div>
               </div>
+
+              {/* 图片 */}
+              {viewingArticle.images && viewingArticle.images.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">爆文图片</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {viewingArticle.images.map((img, idx) => (
+                      <img key={idx} src={img} alt={`图片${idx + 1}`} className="w-full h-48 object-cover rounded-xl" />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* 学习笔记 */}
               {viewingArticle.notes && (
