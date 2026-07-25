@@ -1,0 +1,81 @@
+## Error Type
+Build Error
+
+## Error Message
+Error evaluating Node.js code
+
+## Build Output
+./workspace/projects/src/components/navbar.tsx
+Error evaluating Node.js code
+SyntaxError: /workspace/projects/src/components/navbar.tsx: Identifier 'tabs' has already been declared. (182:8)
+
+  180 |   };
+  181 |
+> 182 |   const tabs = [
+      |         ^
+  183 |     { id: 'dashboard' as const, label: '工作台', icon: BarChart3 },
+  184 |     { id: 'analysis' as const, label: '数据分析', icon: TrendingUp },
+  185 |     { id: 'xiaohongshu' as const, label: '小红书', icon: BookOpen },
+    [at constructor (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:137105)]
+    [at TypeScriptParserMixin.raise (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:194164)]
+    [at TypeScriptScopeHandler.checkRedeclarationInScope (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:163166)]
+    [at TypeScriptScopeHandler.declareName (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:162529)]
+    [at TypeScriptScopeHandler.declareName (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:271160)]
+    [at TypeScriptParserMixin.declareNameFromIdentifier (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:279226)]
+    [at TypeScriptParserMixin.checkIdentifier (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:279152)]
+    [at TypeScriptParserMixin.checkLVal (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:278197)]
+    [at TypeScriptParserMixin.parseVarId (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:403644)]
+    [at TypeScriptParserMixin.parseVarId (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:329902)]
+    [at TypeScriptParserMixin.parseVar (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:402884)]
+    [at TypeScriptParserMixin.parseVarStatement (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:399366)]
+    [at TypeScriptParserMixin.parseVarStatement (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:323322)]
+    [at TypeScriptParserMixin.parseStatementContent (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:391398)]
+    [at TypeScriptParserMixin.parseStatementContent (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:324042)]
+    [at TypeScriptParserMixin.parseStatementLike (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:389494)]
+    [at TypeScriptParserMixin.parseStatementListItem (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:389120)]
+    [at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:401423)]
+    [at TypeScriptParserMixin.parseBlockBody (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:401223)]
+    [at TypeScriptParserMixin.parseBlock (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:400923)]
+    [at TypeScriptParserMixin.parseFunctionBody (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:378053)]
+    [at TypeScriptParserMixin.parseFunctionBodyAndFinish (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:377675)]
+    [at TypeScriptParserMixin.parseFunctionBodyAndFinish (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:318173)]
+    [at /workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:404308]
+    [at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:383677)]
+    [at TypeScriptParserMixin.parseFunction (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:404262)]
+    [at TypeScriptParserMixin.parseFunctionStatement (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:397088)]
+    [at TypeScriptParserMixin.parseStatementContent (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:390089)]
+    [at TypeScriptParserMixin.parseStatementContent (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:324042)]
+    [at TypeScriptParserMixin.parseStatementLike (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:389494)]
+    [at TypeScriptParserMixin.parseStatementListItem (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:389120)]
+    [at TypeScriptParserMixin.parseExportDeclaration (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:415606)]
+    [at TypeScriptParserMixin.parseExportDeclaration (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:327104)]
+    [at TypeScriptParserMixin.maybeParseExportDeclaration (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:414570)]
+    [at TypeScriptParserMixin.parseExport (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:412708)]
+    [at TypeScriptParserMixin.parseExport (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:322862)]
+    [at TypeScriptParserMixin.parseStatementContent (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:391808)]
+    [at TypeScriptParserMixin.parseStatementContent (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:324042)]
+    [at TypeScriptParserMixin.parseStatementLike (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:389494)]
+    [at TypeScriptParserMixin.parseModuleItem (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:389055)]
+    [at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:401400)]
+    [at TypeScriptParserMixin.parseBlockBody (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:401223)]
+    [at TypeScriptParserMixin.parseProgram (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:386857)]
+    [at TypeScriptParserMixin.parseTopLevel (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:386575)]
+    [at TypeScriptParserMixin.parse (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:426834)]
+    [at TypeScriptParserMixin.parse (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:337631)]
+    [at parse (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:191:427092)]
+    [at parser (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:1:142018)]
+    [at <anonymous>]
+    [at normalizeFile (/workspace/projects/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.6_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/babel/bundle.js:13:13275)]
+
+Import traces:
+  Client Component Browser:
+    ./workspace/projects/src/components/navbar.tsx [Client Component Browser]
+    ./workspace/projects/src/app/page.tsx [Client Component Browser]
+    ./workspace/projects/src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/projects/src/components/navbar.tsx [Client Component SSR]
+    ./workspace/projects/src/app/page.tsx [Client Component SSR]
+    ./workspace/projects/src/app/page.tsx [Server Component]
+
+Next.js version: 16.1.1 (Turbopack)

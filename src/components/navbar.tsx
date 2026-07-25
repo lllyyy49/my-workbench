@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal, Camera, User, Target } from 'lucide-react';
+import { BarChart3, FileText, Calendar, ClipboardList, MessageSquare, BookOpen, GraduationCap, TrendingUp, Wallet, Flame, X, MoreHorizontal, Camera, User, Target, GripVertical } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -12,7 +12,41 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const [showEditHint, setShowEditHint] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+
+  // 默认标签顺序
+  const defaultTabList = [
+    { id: 'dashboard' as const, label: '工作台', icon: BarChart3 },
+    { id: 'analysis' as const, label: '数据分析', icon: TrendingUp },
+    { id: 'xiaohongshu' as const, label: '小红书', icon: BookOpen },
+    { id: 'contentReview' as const, label: '内容复盘', icon: Target },
+    { id: 'learning' as const, label: '学习', icon: GraduationCap },
+    { id: 'expense' as const, label: '记账', icon: Wallet },
+    { id: 'worklog' as const, label: '工作日志', icon: ClipboardList },
+    { id: 'reviews' as const, label: '评价库', icon: MessageSquare },
+    { id: 'viral' as const, label: '爆文库', icon: Flame },
+    { id: 'todos' as const, label: '待办', icon: FileText },
+    { id: 'calendar' as const, label: '日历', icon: Calendar },
+    { id: 'notes' as const, label: '记事', icon: FileText },
+  ];
+
+  // 从 localStorage 加载标签顺序
+  const [tabs, setTabs] = useState(() => {
+    if (typeof window === 'undefined') return defaultTabList;
+    const saved = localStorage.getItem('tab-order');
+    if (saved) {
+      try {
+        const savedOrder = JSON.parse(saved) as string[];
+        return savedOrder.map(id => defaultTabList.find(t => t.id === id)).filter((t): t is typeof defaultTabList[0] => t !== undefined);
+      } catch {
+        return defaultTabList;
+      }
+    }
+    return defaultTabList;
+  });
 
   // 从 localStorage 加载头像
   useEffect(() => {
@@ -21,6 +55,44 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
       setAvatar(savedAvatar);
     }
   }, []);
+
+  // 保存标签顺序到 localStorage
+  const saveTabOrder = (newTabs: typeof tabs) => {
+    const order = newTabs.map(t => t.id);
+    localStorage.setItem('tab-order', JSON.stringify(order));
+    setTabs(newTabs);
+  };
+
+  // 重置为默认顺序
+  const resetTabOrder = () => {
+    saveTabOrder(defaultTabList);
+    setShowEditHint(false);
+  };
+
+  // 拖动开始
+  const handleDragStart = (index: number) => {
+    dragItem.current = index;
+  };
+
+  // 拖动进入
+  const handleDragEnter = (index: number) => {
+    dragOverItem.current = index;
+  };
+
+  // 拖动结束
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === dragOverItem.current) return;
+
+    const newTabs = [...tabs];
+    const draggedItem = newTabs[dragItem.current];
+    newTabs.splice(dragItem.current, 1);
+    newTabs.splice(dragOverItem.current, 0, draggedItem);
+
+    saveTabOrder(newTabs);
+    dragItem.current = null;
+    dragOverItem.current = null;
+  };
 
   // 处理头像上传
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,21 +180,6 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
     );
   };
 
-  const tabs = [
-    { id: 'dashboard' as const, label: '工作台', icon: BarChart3 },
-    { id: 'analysis' as const, label: '数据分析', icon: TrendingUp },
-    { id: 'xiaohongshu' as const, label: '小红书', icon: BookOpen },
-    { id: 'contentReview' as const, label: '内容复盘', icon: Target },
-    { id: 'learning' as const, label: '学习', icon: GraduationCap },
-    { id: 'expense' as const, label: '记账', icon: Wallet },
-    { id: 'worklog' as const, label: '工作日志', icon: ClipboardList },
-    { id: 'reviews' as const, label: '评价库', icon: MessageSquare },
-    { id: 'viral' as const, label: '爆文库', icon: Flame },
-    { id: 'todos' as const, label: '待办', icon: FileText },
-    { id: 'calendar' as const, label: '日历', icon: Calendar },
-    { id: 'notes' as const, label: '记事', icon: FileText },
-  ];
-
   // 移动端底部导航显示前5个 + 更多按钮
   const mobileMainTabs = tabs.slice(0, 5);
   const mobileMoreTabs = tabs.slice(5);
@@ -143,26 +200,41 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
                 <p className="text-[10px] text-gray-400 leading-tight">效率 · 专注 · 成长</p>
               </div>
             </div>
-            {/* 中间导航 */}
+            {/* 中间导航 - 支持拖动排序 */}
             <nav className="hidden lg:flex items-center gap-0.5">
-              {tabs.map((tab) => {
+              {tabs.map((tab, index) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragEnter={() => handleDragEnter(index)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
                     onClick={() => onTabChange(tab.id)}
-                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-grab active:cursor-grabbing ${
                       isActive
                         ? 'gradient-teal text-white shadow-md shadow-teal-500/20'
                         : 'text-gray-500 hover:text-teal-600 hover:bg-teal-50/50'
                     }`}
+                    title="拖动可调整顺序"
                   >
+                    <GripVertical className="h-3 w-3 opacity-40 hover:opacity-100 transition-opacity" />
                     <Icon className={`h-4 w-4 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
                     <span>{tab.label}</span>
                   </button>
                 );
               })}
+              {/* 重置按钮 */}
+              <button
+                onClick={() => setShowEditHint(!showEditHint)}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-gray-400 hover:text-teal-600 hover:bg-teal-50/50 transition-all"
+                title="重置顺序"
+              >
+                <X className="h-3 w-3" />
+              </button>
             </nav>
             {/* 右侧头像 */}
             <div className="hidden lg:block">
@@ -170,6 +242,18 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
             </div>
           </div>
         </div>
+        {/* 重置确认提示 */}
+        {showEditHint && (
+          <div className="absolute top-16 right-4 z-50 bg-white rounded-xl shadow-lg border border-gray-100 p-3 min-w-[200px]">
+            <p className="text-sm text-gray-700 mb-2">拖动标签可调整顺序</p>
+            <button
+              onClick={resetTabOrder}
+              className="w-full px-3 py-1.5 text-xs text-teal-600 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
+            >
+              重置为默认顺序
+            </button>
+          </div>
+        )}
       </header>
 
       {/* 移动端底部导航 */}
