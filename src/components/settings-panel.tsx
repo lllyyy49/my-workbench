@@ -34,13 +34,18 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
-  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
-    typeof Notification !== 'undefined' ? Notification.permission : 'denied'
-  );
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('denied');
   const { isDark, toggle: toggleDark } = useDarkMode();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const storageSize = getStorageSize();
+
+  // 获取通知权限状态（客户端）
+  useEffect(() => {
+    if (typeof Notification !== 'undefined') {
+      setNotifPermission(Notification.permission);
+    }
+  }, []);
 
   // 全局搜索
   const performSearch = useCallback((query: string) => {
