@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, TrendingUp, Calendar, Users, Thermometer, Pill, Package, Upload, X, Filter, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { DataImportService } from '@/components/data-import-service';
 
 interface DiseaseTrend {
   id: string;
@@ -105,6 +106,13 @@ export function DiseaseTrends() {
     }
   };
 
+  // 批量导入处理
+  const handleBatchImport = (importedData: any[]) => {
+    if (importedData.length > 0) {
+      setTrends([...importedData, ...trends]);
+    }
+  };
+
   const handleSubmit = () => {
     if (!formData.diseaseName.trim() || !formData.department) {
       alert('请填写病症名称和科室');
@@ -184,13 +192,16 @@ export function DiseaseTrends() {
           <h2 className="text-2xl font-semibold mb-2">病症趋势分析</h2>
           <p className="text-muted-foreground text-sm">各科室热门病症、好发季节、对症药物类型分析</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          添加病症
-        </button>
+        <div className="flex gap-2">
+          <DataImportService onImport={handleBatchImport} />
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            添加病症
+          </button>
+        </div>
       </div>
 
       {/* 统计卡片 */}
