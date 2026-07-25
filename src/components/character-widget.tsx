@@ -275,71 +275,138 @@ export default function CharacterWidget({ reminders }: CharacterWidgetProps) {
           <div className="absolute inset-0 rounded-full bg-teal-200/30 blur-xl" />
 
           {/* Character Image Container */}
-          <div className="relative h-20 w-20 overflow-hidden rounded-full border-3 border-teal-300 bg-gradient-to-b from-amber-50 to-white shadow-lg">
-            {/* Anime Girl SVG Character */}
-            <svg viewBox="0 0 100 100" className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
-              {/* Hair back */}
-              <ellipse cx="50" cy="42" rx="38" ry="40" fill="#5C3317" />
-              {/* Hair sides */}
-              <path d="M15 45 Q10 70 18 85 Q22 75 20 55 Z" fill="#5C3317" />
-              <path d="M85 45 Q90 70 82 85 Q78 75 80 55 Z" fill="#5C3317" />
-              {/* Face */}
-              <ellipse cx="50" cy="48" rx="28" ry="30" fill="#FDE8D0" />
-              {/* Hair front / bangs */}
-              <path d="M22 35 Q25 15 50 12 Q75 15 78 35 Q70 25 50 22 Q30 25 22 35 Z" fill="#6B3A1F" />
-              <path d="M25 38 Q30 28 40 30 Q35 35 30 40 Z" fill="#6B3A1F" />
-              <path d="M75 38 Q70 28 60 30 Q65 35 70 40 Z" fill="#6B3A1F" />
-              {/* Hair spike (ahoge) */}
-              <path d="M48 12 Q45 2 52 5 Q50 8 50 12 Z" fill="#6B3A1F" />
-              {/* Eyes */}
-              <ellipse cx="38" cy="48" rx="7" ry="8" fill="white" />
-              <ellipse cx="62" cy="48" rx="7" ry="8" fill="white" />
-              {/* Iris */}
-              <ellipse cx={38 + eyeTrack.x} cy={48 + eyeTrack.y} rx="4.5" ry="5.5" fill="#3B82C4" />
-              <ellipse cx={62 + eyeTrack.x} cy={48 + eyeTrack.y} rx="4.5" ry="5.5" fill="#3B82C4" />
-              {/* Pupil */}
-              <ellipse cx={38 + eyeTrack.x * 0.5} cy={48 + eyeTrack.y * 0.5} rx="2" ry="2.5" fill="#1a1a2e" />
-              <ellipse cx={62 + eyeTrack.x * 0.5} cy={48 + eyeTrack.y * 0.5} rx="2" ry="2.5" fill="#1a1a2e" />
-              {/* Eye highlights */}
-              <circle cx={36 + eyeTrack.x * 0.3} cy={45 + eyeTrack.y * 0.3} r="1.5" fill="white" />
-              <circle cx={60 + eyeTrack.x * 0.3} cy={45 + eyeTrack.y * 0.3} r="1.5" fill="white" />
+          <div className="relative h-20 w-20 overflow-hidden rounded-full border-3 border-teal-300 bg-gradient-to-b from-sky-50 to-white shadow-lg">
+            {/* Anime Girl SVG Character - Detailed */}
+            <svg viewBox="0 0 120 120" className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="faceGrad" cx="50%" cy="40%" r="50%">
+                  <stop offset="0%" stopColor="#FFF0E0" />
+                  <stop offset="100%" stopColor="#FDE0C8" />
+                </radialGradient>
+                <radialGradient id="eyeGrad" cx="40%" cy="35%" r="60%">
+                  <stop offset="0%" stopColor="#6BB5E8" />
+                  <stop offset="50%" stopColor="#3B82C4" />
+                  <stop offset="100%" stopColor="#1E5FA0" />
+                </radialGradient>
+                <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#7B4B2A" />
+                  <stop offset="50%" stopColor="#5C3317" />
+                  <stop offset="100%" stopColor="#4A2810" />
+                </linearGradient>
+                <linearGradient id="shirtGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#A8DFF0" />
+                  <stop offset="100%" stopColor="#7EC8E3" />
+                </linearGradient>
+              </defs>
+
+              {/* Hair back - long flowing hair */}
+              <path d="M20 50 Q15 30 30 15 Q50 5 70 10 Q90 15 100 35 Q105 50 100 70 Q98 85 95 100 Q90 110 85 115 L80 115 Q82 100 80 80 Q78 65 75 55 L75 55 Q70 50 60 48 Q50 50 45 55 Q42 65 40 80 Q38 100 40 115 L35 115 Q30 110 25 100 Q20 85 18 70 Q15 55 20 50 Z" fill="url(#hairGrad)" />
+
+              {/* Hair sides - left */}
+              <path d="M22 45 Q18 60 20 80 Q22 95 25 105 Q28 95 26 80 Q24 65 28 50 Z" fill="url(#hairGrad)" />
+              {/* Hair sides - right */}
+              <path d="M98 45 Q102 60 100 80 Q98 95 95 105 Q92 95 94 80 Q96 65 92 50 Z" fill="url(#hairGrad)" />
+
+              {/* Face shape */}
+              <path d="M35 40 Q35 25 50 20 Q65 18 80 22 Q90 28 90 45 Q90 65 82 75 Q75 82 60 85 Q45 82 38 75 Q32 65 32 50 Q32 42 35 40 Z" fill="url(#faceGrad)" />
+
+              {/* Hair front / bangs - detailed */}
+              <path d="M28 38 Q30 20 45 15 Q55 12 65 14 Q80 18 88 30 Q92 38 90 42 Q85 32 75 28 Q65 25 55 26 Q45 28 38 34 Q32 38 28 38 Z" fill="url(#hairGrad)" />
+              {/* Bang strands */}
+              <path d="M35 35 Q38 25 48 22 Q42 30 40 38 Z" fill="#6B3A1F" />
+              <path d="M45 30 Q48 20 58 18 Q52 26 50 34 Z" fill="#6B3A1F" />
+              <path d="M55 28 Q58 18 68 18 Q62 26 60 34 Z" fill="#6B3A1F" />
+              <path d="M65 30 Q70 22 78 24 Q72 30 70 38 Z" fill="#6B3A1F" />
+              <path d="M75 34 Q80 28 86 32 Q82 38 78 42 Z" fill="#6B3A1F" />
+
+              {/* Ahoge (hair spike) */}
+              <path d="M55 14 Q52 4 58 2 Q62 4 60 10 Q58 12 57 14 Z" fill="#6B3A1F" />
+              <path d="M58 12 Q56 6 60 4 Q62 6 60 10 Z" fill="#7B4B2A" />
+
+              {/* Eyes - large anime style */}
+              {/* Left eye white */}
+              <ellipse cx="47" cy="52" rx="10" ry="11" fill="white" />
+              {/* Right eye white */}
+              <ellipse cx="73" cy="52" rx="10" ry="11" fill="white" />
+
+              {/* Left iris */}
+              <ellipse cx={47 + eyeTrack.x} cy={52 + eyeTrack.y} rx="7" ry="8" fill="url(#eyeGrad)" />
+              {/* Right iris */}
+              <ellipse cx={73 + eyeTrack.x} cy={52 + eyeTrack.y} rx="7" ry="8" fill="url(#eyeGrad)" />
+
+              {/* Left pupil */}
+              <ellipse cx={47 + eyeTrack.x * 0.4} cy={52 + eyeTrack.y * 0.4} rx="3.5" ry="4.5" fill="#0D1B2A" />
+              {/* Right pupil */}
+              <ellipse cx={73 + eyeTrack.x * 0.4} cy={52 + eyeTrack.y * 0.4} rx="3.5" ry="4.5" fill="#0D1B2A" />
+
+              {/* Eye highlights - main */}
+              <circle cx={44 + eyeTrack.x * 0.2} cy={48 + eyeTrack.y * 0.2} r="3" fill="white" opacity="0.9" />
+              <circle cx={70 + eyeTrack.x * 0.2} cy={48 + eyeTrack.y * 0.2} r="3" fill="white" opacity="0.9" />
+              {/* Eye highlights - secondary */}
+              <circle cx={50 + eyeTrack.x * 0.2} cy={55 + eyeTrack.y * 0.2} r="1.5" fill="white" opacity="0.6" />
+              <circle cx={76 + eyeTrack.x * 0.2} cy={55 + eyeTrack.y * 0.2} r="1.5" fill="white" opacity="0.6" />
+
+              {/* Upper eyelid line */}
+              <path d="M37 48 Q42 44 47 45 Q52 44 57 48" stroke="#3A2010" strokeWidth="1.5" fill="none" />
+              <path d="M63 48 Q68 44 73 45 Q78 44 83 48" stroke="#3A2010" strokeWidth="1.5" fill="none" />
+
               {/* Eyelashes */}
-              <path d="M31 44 Q34 42 38 43" stroke="#3a2010" strokeWidth="1" fill="none" />
-              <path d="M69 44 Q66 42 62 43" stroke="#3a2010" strokeWidth="1" fill="none" />
+              <path d="M37 48 Q35 44 33 42" stroke="#3A2010" strokeWidth="1.2" fill="none" />
+              <path d="M83 48 Q85 44 87 42" stroke="#3A2010" strokeWidth="1.2" fill="none" />
+
               {/* Eyebrows */}
-              <path d="M32 38 Q38 35 44 37" stroke="#5C3317" strokeWidth="1.2" fill="none" />
-              <path d="M68 38 Q62 35 56 37" stroke="#5C3317" strokeWidth="1.2" fill="none" />
-              {/* Nose */}
-              <path d="M49 53 Q50 55 51 53" stroke="#E8C4A0" strokeWidth="0.8" fill="none" />
+              <path d="M39 40 Q44 37 52 39" stroke="#5C3317" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+              <path d="M81 40 Q76 37 68 39" stroke="#5C3317" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+
+              {/* Nose - small dot */}
+              <ellipse cx="60" cy="62" rx="1.5" ry="1" fill="#E8C4A0" />
+
               {/* Mouth */}
               {mood === "happy" || mood === "excited" ? (
-                <path d="M44 60 Q50 65 56 60" stroke="#E8857A" strokeWidth="1.2" fill="#F4A0A0" />
+                <>
+                  <path d="M53 70 Q60 76 67 70" stroke="#E07070" strokeWidth="1.5" fill="#F0A0A0" />
+                  <path d="M55 70 Q60 73 65 70" fill="white" opacity="0.5" />
+                </>
               ) : mood === "eating" ? (
-                <ellipse cx="50" cy="61" rx="4" ry="3" fill="#E8857A" />
+                <ellipse cx="60" cy="71" rx="5" ry="4" fill="#E07070" />
               ) : mood === "sleepy" ? (
-                <path d="M46 60 Q50 61 54 60" stroke="#E8857A" strokeWidth="1" fill="none" />
+                <path d="M55 70 Q60 72 65 70" stroke="#E07070" strokeWidth="1.2" fill="none" />
+              ) : mood === "thinking" ? (
+                <path d="M55 71 Q60 73 65 71" stroke="#E07070" strokeWidth="1.2" fill="none" />
               ) : (
-                <path d="M46 60 Q50 62 54 60" stroke="#E8857A" strokeWidth="1" fill="none" />
+                <path d="M55 70 Q60 73 65 70" stroke="#E07070" strokeWidth="1.2" fill="none" />
               )}
+
               {/* Blush */}
-              <ellipse cx="33" cy="56" rx="4" ry="2.5" fill="#FFB5B5" opacity="0.5" />
-              <ellipse cx="67" cy="56" rx="4" ry="2.5" fill="#FFB5B5" opacity="0.5" />
+              <ellipse cx="40" cy="64" rx="5" ry="3" fill="#FFB0B0" opacity="0.4" />
+              <ellipse cx="80" cy="64" rx="5" ry="3" fill="#FFB0B0" opacity="0.4" />
+
               {/* Neck */}
-              <rect x="44" y="72" width="12" height="8" fill="#FDE8D0" rx="2" />
-              {/* Shirt collar */}
-              <path d="M35 80 Q50 75 65 80 L68 100 L32 100 Z" fill="#87CEEB" />
-              {/* Bow */}
-              <path d="M46 82 L50 79 L54 82 L50 85 Z" fill="#5BB5D4" />
-              <circle cx="50" cy="82" r="2" fill="#5BB5D4" />
+              <path d="M52 82 L52 90 Q52 92 54 92 L66 92 Q68 92 68 90 L68 82" fill="#FDE0C8" />
+
+              {/* Shirt / top */}
+              <path d="M40 92 Q50 88 60 88 Q70 88 80 92 L85 120 L35 120 Z" fill="url(#shirtGrad)" />
+              {/* Collar detail */}
+              <path d="M48 92 L60 98 L72 92" stroke="#5BB5D4" strokeWidth="1" fill="none" />
+              {/* Bow tie */}
+              <path d="M55 94 L60 90 L65 94 L60 98 Z" fill="#5BB5D4" />
+              <circle cx="60" cy="94" r="2" fill="#4AA3C2" />
+
               {/* Sleepy ZZZ */}
               {mood === "sleepy" && (
-                <text x="72" y="30" fontSize="8" fill="#9CA3AF" fontWeight="bold">
-                  zzz
-                </text>
+                <g>
+                  <text x="85" y="35" fontSize="7" fill="#9CA3AF" fontWeight="bold" fontFamily="sans-serif">z</text>
+                  <text x="92" y="28" fontSize="9" fill="#9CA3AF" fontWeight="bold" fontFamily="sans-serif">z</text>
+                  <text x="100" y="20" fontSize="11" fill="#9CA3AF" fontWeight="bold" fontFamily="sans-serif">z</text>
+                </g>
               )}
               {/* Working sweat drop */}
               {mood === "working" && (
-                <path d="M72 38 Q74 42 72 44 Q70 42 72 38 Z" fill="#60A5FA" opacity="0.7" />
+                <path d="M88 42 Q90 48 88 50 Q86 48 88 42 Z" fill="#60A5FA" opacity="0.8" />
+              )}
+              {/* Thinking question mark */}
+              {mood === "thinking" && (
+                <text x="85" y="30" fontSize="14" fill="#F59E0B" fontWeight="bold">?</text>
               )}
             </svg>
             {/* Mood Indicator */}
@@ -352,7 +419,7 @@ export default function CharacterWidget({ reminders }: CharacterWidgetProps) {
           {!isMinimized && (
             <div className="mt-1 text-center">
               <span className="rounded-full bg-teal-500/90 px-2.5 py-0.5 text-xs font-medium text-white shadow-sm">
-                小蓝
+                猫露露
               </span>
             </div>
           )}
