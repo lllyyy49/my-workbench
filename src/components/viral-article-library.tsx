@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash } from 'lucide-react';
+import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash, Lightbulb, Sparkles, Save } from 'lucide-react';
 
 interface ViralArticle {
   id: string;
@@ -62,6 +62,21 @@ export function ViralArticleLibrary() {
     images: [] as string[],
   });
   const [isDragOver, setIsDragOver] = useState(false);
+  const [summary, setSummary] = useState(() => {
+    try {
+      return localStorage.getItem('viral-summary') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [showSummaryForm, setShowSummaryForm] = useState(false);
+  const [summaryUpdatedAt, setSummaryUpdatedAt] = useState(() => {
+    try {
+      return localStorage.getItem('viral-summary-updated') || '';
+    } catch {
+      return '';
+    }
+  });
 
   useEffect(() => {
     const stored = localStorage.getItem('viral-articles');
@@ -74,6 +89,10 @@ export function ViralArticleLibrary() {
   useEffect(() => {
     localStorage.setItem('viral-articles', JSON.stringify(articles));
   }, [articles]);
+
+  useEffect(() => {
+    localStorage.setItem('viral-summary', summary);
+  }, [summary]);
 
   // 获取所有标签
   const allTags = Array.from(new Set(articles.flatMap(a => a.tags)));
@@ -259,6 +278,39 @@ export function ViralArticleLibrary() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 统一总结区域 */}
+      <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-xl p-6 shadow-sm border border-teal-100">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-2 bg-teal-500 rounded-lg">
+            <Lightbulb className="w-5 h-5 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800">爆文规律总结</h3>
+          <button
+            onClick={() => setShowSummaryForm(true)}
+            className="ml-auto flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white text-sm rounded-lg hover:bg-teal-600 transition-colors"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+            <span>编辑总结</span>
+          </button>
+        </div>
+        {summary ? (
+          <div className="space-y-3">
+            <div className="bg-white/80 rounded-lg p-4">
+              <div className="text-sm font-medium text-teal-700 mb-2"> 核心规律</div>
+              <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">{summary}</div>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+              <span>最后更新：{new Date(summaryUpdatedAt).toLocaleDateString('zh-CN')}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-6 text-gray-400">
+            <Lightbulb className="w-10 h-10 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">还没有总结，点击"编辑总结"开始提炼爆文规律</p>
+          </div>
+        )}
       </div>
 
       {/* 搜索和筛选 */}
@@ -859,6 +911,109 @@ export function ViralArticleLibrary() {
                 关闭
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 统一总结区域 */}
+      {articles.length > 0 && (
+        <div className="mt-8 bg-gradient-to-br from-teal-50 to-amber-50 rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Lightbulb className="w-5 h-5 text-amber-600" />
+            <h3 className="text-lg font-bold text-gray-900">爆文总结</h3>
+            <span className="text-sm text-gray-500 ml-2">共 {articles.length} 篇爆文</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* 热门分类 */}
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="text-sm text-gray-500 mb-1">热门分类</div>
+              <div className="text-lg font-bold text-teal-600">
+                {(() => {
+                  const catCount: Record<string, number> = {};
+                  articles.forEach(a => { catCount[a.category] = (catCount[a.category] || 0) + 1; });
+                  const top = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0];
+                  return top ? `${top[0]} (${top[1]}篇)` : '暂无';
+                })()}
+              </div>
+            </div>
+
+            {/* 热门来源 */}
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="text-sm text-gray-500 mb-1">热门来源</div>
+              <div className="text-lg font-bold text-teal-600">
+                {(() => {
+                  const srcCount: Record<string, number> = {};
+                  articles.forEach(a => { srcCount[a.source] = (srcCount[a.source] || 0) + 1; });
+                  const top = Object.entries(srcCount).sort((a, b) => b[1] - a[1])[0];
+                  return top ? `${top[0]} (${top[1]}篇)` : '暂无';
+                })()}
+              </div>
+            </div>
+
+            {/* 平均互动 */}
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="text-sm text-gray-500 mb-1">平均互动量</div>
+              <div className="text-lg font-bold text-teal-600">
+                {Math.round(articles.reduce((sum, a) => sum + (a.metrics?.likes || 0), 0) / articles.length)}
+              </div>
+            </div>
+          </div>
+
+          {/* 高频标签 */}
+          <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
+            <div className="text-sm text-gray-500 mb-2">高频标签 TOP5</div>
+            <div className="flex flex-wrap gap-2">
+              {(() => {
+                const tagCount: Record<string, number> = {};
+                articles.forEach(a => {
+                  a.tags.forEach(t => { tagCount[t] = (tagCount[t] || 0) + 1; });
+                });
+                return Object.entries(tagCount)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 5)
+                  .map(([tag, count]) => (
+                    <span key={tag} className="text-sm px-3 py-1 bg-teal-50 text-teal-700 rounded-full">
+                      #{tag} ({count})
+                    </span>
+                  ));
+              })()}
+            </div>
+          </div>
+
+          {/* 爆文规律总结 */}
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="text-sm text-gray-500 mb-2">可借鉴要点</div>
+            <ul className="space-y-2 text-sm text-gray-700">
+              <li className="flex items-start gap-2">
+                <span className="text-teal-500 mt-0.5">•</span>
+                <span>优先参考「{(() => {
+                  const catCount: Record<string, number> = {};
+                  articles.forEach(a => { catCount[a.category] = (catCount[a.category] || 0) + 1; });
+                  const top = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0];
+                  return top ? top[0] : '暂无';
+                })()}」类爆文，占比最高</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-teal-500 mt-0.5">•</span>
+                <span>重点关注「{(() => {
+                  const srcCount: Record<string, number> = {};
+                  articles.forEach(a => { srcCount[a.source] = (srcCount[a.source] || 0) + 1; });
+                  const top = Object.entries(srcCount).sort((a, b) => b[1] - a[1])[0];
+                  return top ? top[0] : '暂无';
+                })()}」平台的内容风格</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-teal-500 mt-0.5">•</span>
+                <span>常用话题：{(() => {
+                  const topicCount: Record<string, number> = {};
+                  articles.forEach(a => {
+                    a.topics.forEach(t => { topicCount[t] = (topicCount[t] || 0) + 1; });
+                  });
+                  return Object.entries(topicCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t]) => t).join('、') || '暂无';
+                })()}</span>
+              </li>
+            </ul>
           </div>
         </div>
       )}
