@@ -16,8 +16,10 @@ export function PasswordProtection({ children }: PasswordProtectionProps) {
   const [error, setError] = useState('');
   const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const savedPassword = localStorage.getItem('site-password');
     if (savedPassword) {
       setHasPassword(true);
@@ -62,6 +64,11 @@ export function PasswordProtection({ children }: PasswordProtectionProps) {
   // 已解锁，显示内容
   if (isUnlocked) {
     return <>{children}</>;
+  }
+
+  // 客户端未挂载前不渲染，避免 hydration 不匹配
+  if (!mounted) {
+    return null;
   }
 
   // 首次使用，设置密码
