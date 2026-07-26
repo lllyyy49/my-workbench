@@ -41,6 +41,8 @@ export function DiseaseTrends() {
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedSeason, setSelectedSeason] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBatchMode, setIsBatchMode] = useState(false);
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -104,6 +106,41 @@ export function DiseaseTrends() {
     if (confirm('确定要删除这条病症趋势吗？')) {
       setTrends(trends.filter(t => t.id !== id));
     }
+  };
+
+  // 批量选择切换
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredTrends.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredTrends.map(t => t.id)));
+    }
+  };
+
+  // 批量删除
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (confirm(`确定要删除选中的 ${selectedIds.size} 条病症趋势吗？`)) {
+      setTrends(trends.filter(t => !selectedIds.has(t.id)));
+      setSelectedIds(new Set());
+      setIsBatchMode(false);
+    }
+  };
+
+  // 退出批量模式
+  const exitBatchMode = () => {
+    setIsBatchMode(false);
+    setSelectedIds(new Set());
   };
 
   // 批量导入处理
@@ -194,6 +231,31 @@ export function DiseaseTrends() {
         </div>
         <div className="flex gap-2">
           <DataImportService onImport={handleBatchImport} />
+          {isBatchMode ? (
+            <>
+              <button
+                onClick={handleBatchDelete}
+                disabled={selectedIds.size === 0}
+                className="px-4 py-2.5 rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                删除 ({selectedIds.size})
+              </button>
+              <button
+                onClick={exitBatchMode}
+                className="px-4 py-2.5 rounded-lg border border-border hover:bg-secondary transition-all text-sm font-medium"
+              >
+                取消
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsBatchMode(true)}
+              className="px-4 py-2.5 rounded-lg border border-border hover:bg-secondary transition-all text-sm font-medium flex items-center gap-1.5"
+            >
+              批量管理
+            </button>
+          )}
           <button
             onClick={() => { resetForm(); setShowForm(true); }}
             className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-sm font-medium flex items-center gap-1.5"
@@ -329,6 +391,16 @@ export function DiseaseTrends() {
             <table className="w-full">
               <thead className="bg-muted/50 border-b border-border">
                 <tr>
+                  {isBatchMode && (
+                    <th className="px-4 py-3 text-left w-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.size === filteredTrends.length && filteredTrends.length > 0}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-border cursor-pointer"
+                      />
+                    </th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">科室</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">病症名称</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">好发人群</th>
@@ -341,7 +413,17 @@ export function DiseaseTrends() {
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredTrends.map(trend => (
-                  <tr key={trend.id} className="hover:bg-muted/30 transition-colors">
+                  <tr key={trend.id} className={`hover:bg-muted/30 transition-colors ${isBatchMode && selectedIds.has(trend.id) ? 'bg-primary/5' : ''}`}>
+                    {isBatchMode && (
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(trend.id)}
+                          onChange={() => toggleSelect(trend.id)}
+                          className="w-4 h-4 rounded border-border cursor-pointer"
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-sm">{trend.department}</td>
                     <td className="px-4 py-3 text-sm font-medium">{trend.diseaseName}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{trend.targetGroup || '-'}</td>
@@ -373,20 +455,22 @@ export function DiseaseTrends() {
                       {trend.productSuggestions || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleEdit(trend)}
-                          className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(trend.id)}
-                          className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {!isBatchMode && (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleEdit(trend)}
+                            className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(trend.id)}
+                            className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
