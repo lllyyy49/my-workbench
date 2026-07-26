@@ -73,13 +73,7 @@ export function ViralArticleLibrary() {
     }
   });
   const [showSummaryForm, setShowSummaryForm] = useState(false);
-  const [summaryUpdatedAt, setSummaryUpdatedAt] = useState(() => {
-    try {
-      return localStorage.getItem('viral-summary-updated') || '';
-    } catch {
-      return '';
-    }
-  });
+  const [summaryUpdatedAt, setSummaryUpdatedAt] = useState('');
 
   const handleSaveSummary = () => {
     setSummaryUpdatedAt(new Date().toISOString());
@@ -90,6 +84,10 @@ export function ViralArticleLibrary() {
     const stored = localStorage.getItem('viral-articles');
     if (stored) {
       setArticles(JSON.parse(stored));
+    }
+    const storedSummaryUpdated = localStorage.getItem('viral-summary-updated');
+    if (storedSummaryUpdated) {
+      setSummaryUpdatedAt(storedSummaryUpdated);
     }
     setNow(Date.now());
   }, []);
