@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Search } from 'lucide-react';
+import { Plus, Trash2, Search, Loader2 } from 'lucide-react';
+import { useSyncedData } from '@/hooks/use-synced-data';
 
 interface Note {
   id: string;
@@ -12,32 +13,23 @@ interface Note {
 }
 
 export function QuickNotes() {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const { data: notes, loading, addData, updateData, deleteData } = useSyncedData<Note>('notes');
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('notes');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setNotes(parsed);
-      if (parsed.length > 0) {
-        setSelectedNoteId(parsed[0].id);
-        setTitle(parsed[0].title);
-        setContent(parsed[0].content);
-      }
+    if (notes && notes.length > 0 && !selectedNoteId) {
+      setSelectedNoteId(notes[0].id);
+      setTitle(notes[0].title);
+      setContent(notes[0].content);
     }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('notes', JSON.stringify(notes));
-  }, [notes]);
+  }, [notes, selectedNoteId]);
 
   const selectedNote = notes.find(n => n.id === selectedNoteId);
 
-  const createNote = () => {
+  const createNote = async () => {
     const note: Note = {
       id: Date.now().toString(),
       title: '无标题笔记',
@@ -45,30 +37,25 @@ export function QuickNotes() {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    const updated = [note, ...notes];
-    setNotes(updated);
+    await addData(note);
     setSelectedNoteId(note.id);
     setTitle(note.title);
     setContent(note.content);
   };
 
-  const updateNote = () => {
+  const updateNote = async () => {
     if (!selectedNoteId) return;
-    setNotes(notes.map(n =>
-      n.id === selectedNoteId
-        ? { ...n, title: title || '无标题笔记', content, updatedAt: Date.now() }
-        : n
-    ));
+    await updateData(selectedNoteId, { title: title || '无标题笔记', content, updatedAt: Date.now() });
   };
 
-  const deleteNote = (id: string) => {
-    const updated = notes.filter(n => n.id !== id);
-    setNotes(updated);
+  const deleteNote = async (id: string) => {
+    await deleteData(id);
     if (selectedNoteId === id) {
-      if (updated.length > 0) {
-        setSelectedNoteId(updated[0].id);
-        setTitle(updated[0].title);
-        setContent(updated[0].content);
+      const remaining = notes?.filter(n => n.id !== id) || [];
+      if (remaining.length > 0) {
+        setSelectedNoteId(remaining[0].id);
+        setTitle(remaining[0].title);
+        setContent(remaining[0].content);
       } else {
         setSelectedNoteId(null);
         setTitle('');
