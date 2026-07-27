@@ -594,7 +594,7 @@ export function ReviewTemplates() {
       {/* 添加评价弹窗 */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-lg space-y-4 my-8">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-lg space-y-4 my-8 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold">添加评价模板</h3>
 
             {/* 重复警告 */}

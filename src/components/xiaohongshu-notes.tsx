@@ -1009,7 +1009,7 @@ export function XiaohongshuNotes() {
       {/* 账号管理弹窗 */}
       {showAccountModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Users className="h-5 w-5" />
@@ -1075,7 +1075,7 @@ export function XiaohongshuNotes() {
       {/* 店铺管理弹窗 */}
       {showShopModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Store className="h-5 w-5" />
@@ -1140,8 +1140,8 @@ export function XiaohongshuNotes() {
 
       {/* 添加/编辑笔记弹窗 */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-lg space-y-4 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold">{editingNote ? '编辑笔记' : '添加笔记'}</h3>
             
             {/* 选择账号 */}

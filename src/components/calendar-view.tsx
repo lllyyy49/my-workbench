@@ -233,7 +233,7 @@ export function CalendarView() {
       {/* 添加日程弹窗 */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold">添加日程</h3>
             <div>
               <label className="text-sm font-medium mb-1.5 block">标题</label>

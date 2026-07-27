@@ -686,7 +686,7 @@ export function LearningArea() {
       {/* 添加分类弹窗 */}
       {showAddCategoryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold">添加学习分类</h3>
             <div>
               <label className="text-sm font-medium mb-1.5 block">分类名称</label>
@@ -796,7 +796,7 @@ export function LearningArea() {
       {/* 添加阶段弹窗 */}
       {showAddStageModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold">添加学习阶段</h3>
             <div>
               <label className="text-sm font-medium mb-1.5 block">阶段名称 *</label>
