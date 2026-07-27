@@ -222,7 +222,7 @@ export function DiseaseTrends() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.diseaseName.trim() || !formData.department) {
       alert('请填写病症名称和科室');
       return;
