@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Copy, Check, AlertCircle, Image as ImageIcon, X, Upload, FileText, Clipboard, CheckSquare, Square, RotateCcw, RotateCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
-import { useUndoRedo } from '@/hooks/use-undo-redo';
+import { useSyncedData } from '@/hooks/use-synced-data';
 
 interface ReviewTemplate {
   id: string;
@@ -24,7 +24,7 @@ interface ReviewImage {
 }
 
 export function ReviewTemplates() {
-  const { state: templates, setState: setTemplates, undo, redo, canUndo, canRedo } = useUndoRedo<ReviewTemplate[]>([]);
+  const { data: templates, setData: setTemplates, loading, sync } = useSyncedData<ReviewTemplate[]>('review_templates', []);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newText, setNewText] = useState('');
   const [newCategory, setNewCategory] = useState('');
@@ -37,16 +37,7 @@ export function ReviewTemplates() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('review-templates');
-    if (stored) {
-      setTemplates(JSON.parse(stored));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('review-templates', JSON.stringify(templates));
-  }, [templates]);
+  // 云同步自动处理
 
   // 计算文件hash（使用简单的文件内容hash）
   const calculateFileHash = (file: File): Promise<string> => {
@@ -328,7 +319,7 @@ export function ReviewTemplates() {
       createdAt: Date.now(),
     };
 
-    setTemplates([template, ...templates]);
+    await sync([...templates, template]);
     setNewText('');
     setNewCategory('');
     setNewImages([]);
@@ -336,8 +327,8 @@ export function ReviewTemplates() {
     setShowAddModal(false);
   };
 
-  const deleteTemplate = (id: string) => {
-    setTemplates(templates.filter(t => t.id !== id));
+  const deleteTemplate = async (id: string) => {
+    await sync(templates.filter(t => t.id !== id));
   };
 
   // 批量选择切换
@@ -361,10 +352,10 @@ export function ReviewTemplates() {
   };
 
   // 批量删除
-  const handleBatchDelete = () => {
+  const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return;
     if (confirm(`确定要删除选中的 ${selectedIds.size} 条评价吗？`)) {
-      setTemplates(templates.filter(t => !selectedIds.has(t.id)));
+      await sync(templates.filter(t => !selectedIds.has(t.id)));
       setSelectedIds(new Set());
       setIsBatchMode(false);
     }
@@ -381,7 +372,7 @@ export function ReviewTemplates() {
     await navigator.clipboard.writeText(template.text);
     
     // 更新使用次数
-    setTemplates(templates.map(t => t.id === template.id ? {
+    await sync(templates.map(t => t.id === template.id ? {
       ...t,
       usedCount: t.usedCount + 1,
       lastUsed: Date.now(),
