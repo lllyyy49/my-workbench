@@ -299,7 +299,7 @@ export function ReviewTemplates() {
     }
   };
 
-  const addTemplate = () => {
+  const addTemplate = async () => {
     if (!newText.trim()) return;
 
     // 检查文字重复
