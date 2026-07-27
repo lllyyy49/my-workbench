@@ -104,10 +104,6 @@ export function PasswordProtection({ children }: PasswordProtectionProps) {
             </button>
           </div>
         </div>
-
-        <p className="text-center text-slate-400 text-sm mt-6">
-          密码：li2024
-        </p>
       </div>
     </div>
   );
