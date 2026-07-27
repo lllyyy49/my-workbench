@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Loader2 } from 'lucide-react';
+import { useSyncedData } from '@/hooks/use-synced-data';
 
 interface CalendarEvent {
   id: string;
@@ -20,22 +21,11 @@ const EVENT_COLORS = [
 ];
 
 export function CalendarView() {
+  const { data: events, loading, addItem, deleteItem } = useSyncedData<CalendarEvent>('calendar_events');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEvent, setNewEvent] = useState({ title: '', time: '', color: EVENT_COLORS[0] });
-
-  useEffect(() => {
-    const stored = localStorage.getItem('calendar-events');
-    if (stored) {
-      setEvents(JSON.parse(stored));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('calendar-events', JSON.stringify(events));
-  }, [events]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -66,13 +56,13 @@ export function CalendarView() {
       time: newEvent.time || undefined,
       color: newEvent.color,
     };
-    setEvents([...events, event]);
+    addItem(event);
     setNewEvent({ title: '', time: '', color: EVENT_COLORS[0] });
     setShowAddModal(false);
   };
 
   const deleteEvent = (id: string) => {
-    setEvents(events.filter(e => e.id !== id));
+    deleteItem(id);
   };
 
   const days = [];
