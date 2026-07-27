@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, Circle, Trash2, Edit2, Check, X } from 'lucide-react';
-
-interface WorkLog {
-  id: string;
-  date: string; // YYYY-MM-DD
-  items: WorkItem[];
-  summary: string;
-  createdAt: number;
-}
+import { useSyncedData } from '@/hooks/use-synced-data';
 
 interface WorkItem {
   id: string;
@@ -17,8 +10,17 @@ interface WorkItem {
   completed: boolean;
 }
 
+interface WorkLog {
+  id: string;
+  date: string;
+  content: string;
+  completed: boolean;
+  summary: string;
+  createdAt: number;
+}
+
 export function DailyWorkLog() {
-  const [logs, setLogs] = useState<WorkLog[]>([]);
+  const { data: logs, loading, addData, updateData, deleteData } = useSyncedData<WorkLog>('work_logs');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [newItem, setNewItem] = useState('');
   const [summary, setSummary] = useState('');
@@ -26,21 +28,21 @@ export function DailyWorkLog() {
   const [editText, setEditText] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('work-logs');
-    if (stored) {
-      setLogs(JSON.parse(stored));
-    }
-    // 默认选择今天
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     setSelectedDate(todayStr);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('work-logs', JSON.stringify(logs));
-  }, [logs]);
+  // 将扁平的 work_logs 转换为按日期分组
+  const logsByDate = logs?.reduce((acc, log) => {
+    if (!acc[log.date]) {
+      acc[log.date] = [];
+    }
+    acc[log.date].push(log);
+    return acc;
+  }, {} as Record<string, WorkLog[]>) || {};
 
-  const currentLog = logs.find(l => l.date === selectedDate);
+  const currentLogItems = selectedDate ? (logsByDate[selectedDate] || []) : [];
 
   const createLogForDate = () => {
     if (!selectedDate) return;
@@ -55,72 +57,44 @@ export function DailyWorkLog() {
     return newLog;
   };
 
-  const addItem = () => {
+  const addItem = async () => {
     if (!newItem.trim() || !selectedDate) return;
-    const item: WorkItem = {
-      id: Date.now().toString(),
+    await addData({
+      date: selectedDate,
       content: newItem.trim(),
       completed: false,
-    };
-    if (currentLog) {
-      setLogs(logs.map(l => l.date === selectedDate ? { ...l, items: [...l.items, item] } : l));
-    } else {
-      const newLog: WorkLog = {
-        id: Date.now().toString(),
-        date: selectedDate,
-        items: [item],
-        summary: '',
-        createdAt: Date.now(),
-      };
-      setLogs([newLog, ...logs]);
-    }
+      summary: '',
+      createdAt: Date.now(),
+    });
     setNewItem('');
   };
 
-  const toggleItem = (itemId: string) => {
-    if (!currentLog) return;
-    setLogs(logs.map(l => l.date === selectedDate ? {
-      ...l,
-      items: l.items.map(i => i.id === itemId ? { ...i, completed: !i.completed } : i)
-    } : l));
+  const toggleItem = async (item: WorkLog) => {
+    await updateData(item.id, { completed: !item.completed });
   };
 
-  const deleteItem = (itemId: string) => {
-    if (!currentLog) return;
-    setLogs(logs.map(l => l.date === selectedDate ? {
-      ...l,
-      items: l.items.filter(i => i.id !== itemId)
-    } : l));
+  const deleteItem = async (itemId: string) => {
+    await deleteData(itemId);
   };
 
-  const startEditItem = (item: WorkItem) => {
+  const startEditItem = (item: WorkLog) => {
     setEditingItemId(item.id);
     setEditText(item.content);
   };
 
-  const saveEditItem = () => {
-    if (!editText.trim() || !editingItemId || !currentLog) return;
-    setLogs(logs.map(l => l.date === selectedDate ? {
-      ...l,
-      items: l.items.map(i => i.id === editingItemId ? { ...i, content: editText.trim() } : i)
-    } : l));
+  const saveEditItem = async () => {
+    if (!editText.trim() || !editingItemId) return;
+    await updateData(editingItemId, { content: editText.trim() });
     setEditingItemId(null);
     setEditText('');
   };
 
-  const updateSummary = (value: string) => {
+  const updateSummary = async (value: string) => {
     setSummary(value);
-    if (currentLog) {
-      setLogs(logs.map(l => l.date === selectedDate ? { ...l, summary: value } : l));
-    } else {
-      const newLog: WorkLog = {
-        id: Date.now().toString(),
-        date: selectedDate,
-        items: [],
-        summary: value,
-        createdAt: Date.now(),
-      };
-      setLogs([newLog, ...logs]);
+    // 更新该日期的所有记录的 summary
+    const items = logsByDate[selectedDate] || [];
+    for (const item of items) {
+      await updateData(item.id, { summary: value });
     }
   };
 
@@ -165,8 +139,8 @@ export function DailyWorkLog() {
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2">
           {getRecentDates().map(date => {
-            const log = logs.find(l => l.date === date);
-            const hasLog = !!log;
+            const items = logsByDate[date] || [];
+            const hasLog = items.length > 0;
             const isSelected = date === selectedDate;
             return (
               <button
@@ -221,9 +195,9 @@ export function DailyWorkLog() {
         </div>
 
         {/* 工作项列表 */}
-        {currentLog && currentLog.items.length > 0 ? (
+        {currentItems.length > 0 ? (
           <div className="space-y-2">
-            {currentLog.items.map(item => (
+            {currentItems.map(item => (
               <div
                 key={item.id}
                 className={`flex items-center gap-3 p-3 rounded-lg border transition-all group ${
@@ -231,7 +205,7 @@ export function DailyWorkLog() {
                 }`}
               >
                 <button
-                  onClick={() => toggleItem(item.id)}
+                  onClick={() => toggleItem(item)}
                   className="flex-shrink-0"
                 >
                   {item.completed ? (
@@ -292,7 +266,7 @@ export function DailyWorkLog() {
       <div className="bg-card rounded-xl border border-border p-6">
         <h3 className="font-semibold mb-4">日复盘总结</h3>
         <textarea
-          value={currentLog?.summary || summary}
+          value={summary}
           onChange={(e) => updateSummary(e.target.value)}
           placeholder="今天的收获、遇到的问题、明天的计划..."
           className="w-full h-32 px-4 py-3 rounded-lg border border-border bg-background text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
