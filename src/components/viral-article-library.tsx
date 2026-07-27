@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Search, Tag, Eye, Edit2, Trash2, X, ExternalLink, Calendar, TrendingUp, BookOpen, Image, Hash, Lightbulb, Sparkles, Save, Upload, Clipboard, CheckSquare, Square, RotateCcw, RotateCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
-import { useUndoRedo } from '@/hooks/use-undo-redo';
+import { useSyncedData } from '@/hooks/use-synced-data';
 
 interface ViralArticle {
   id: string;
@@ -37,7 +37,7 @@ const CATEGORIES = [
 ];
 
 export function ViralArticleLibrary() {
-  const { state: articles, setState: setArticles, undo, redo, canUndo, canRedo } = useUndoRedo<ViralArticle[]>([]);
+  const { data: articles, sync, loading } = useSyncedData<ViralArticle>('viral_articles');
   const [showForm, setShowForm] = useState(false);
   const [editingArticle, setEditingArticle] = useState<ViralArticle | null>(null);
   const [viewingArticle, setViewingArticle] = useState<ViralArticle | null>(null);
@@ -81,20 +81,12 @@ export function ViralArticleLibrary() {
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem('viral-articles');
-    if (stored) {
-      setArticles(JSON.parse(stored));
-    }
     const storedSummaryUpdated = localStorage.getItem('viral-summary-updated');
     if (storedSummaryUpdated) {
       setSummaryUpdatedAt(storedSummaryUpdated);
     }
     setNow(Date.now());
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem('viral-articles', JSON.stringify(articles));
-  }, [articles]);
 
   useEffect(() => {
     localStorage.setItem('viral-summary', summary);
@@ -142,7 +134,7 @@ export function ViralArticleLibrary() {
     const topicsArray = formData.topics.split(/[,，]/).map(t => t.trim()).filter(t => t);
 
     if (editingArticle) {
-      setArticles(articles.map(a => a.id === editingArticle.id ? {
+      const updated = articles.map(a => a.id === editingArticle.id ? {
         ...a,
         title: formData.title,
         source: formData.source,
@@ -160,7 +152,8 @@ export function ViralArticleLibrary() {
         },
         notes: formData.notes,
         updatedAt: Date.now(),
-      } : a));
+      } : a);
+      await sync(updated);
     } else {
       const newArticle: ViralArticle = {
         id: Date.now().toString(),
@@ -182,7 +175,7 @@ export function ViralArticleLibrary() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      setArticles([newArticle, ...articles]);
+      await sync([newArticle, ...articles]);
     }
 
     setShowForm(false);
@@ -210,9 +203,9 @@ export function ViralArticleLibrary() {
     setViewingArticle(null);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('确定要删除这篇爆文吗？')) {
-      setArticles(articles.filter(a => a.id !== id));
+      await sync(articles.filter(a => a.id !== id));
     }
   };
 
@@ -237,10 +230,10 @@ export function ViralArticleLibrary() {
   };
 
   // 批量删除
-  const handleBatchDelete = () => {
+  const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return;
     if (confirm(`确定要删除选中的 ${selectedIds.size} 篇爆文吗？`)) {
-      setArticles(articles.filter(a => !selectedIds.has(a.id)));
+      await sync(articles.filter(a => !selectedIds.has(a.id)));
       setSelectedIds(new Set());
       setIsBatchMode(false);
     }
@@ -420,7 +413,7 @@ export function ViralArticleLibrary() {
           metrics: a.metrics || { views: 0, likes: 0, comments: 0, shares: 0 },
         })) as ViralArticle[];
         
-        setArticles([...newArticles, ...articles]);
+        await sync([...newArticles, ...articles]);
         alert(`成功导入 ${allArticles.length} 条爆文记录`);
       } else {
         alert('文件中没有找到有效的记录');
