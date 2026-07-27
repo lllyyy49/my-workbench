@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, ExternalLink, BookOpen, FileText, Lightbulb, Target, Check, X, Folder, ChevronDown, ChevronRight } from 'lucide-react';
+import { useSyncedData } from '@/hooks/use-synced-data';
 
 // 激励句子库
 const getMotivation = (level: number): string => {
@@ -111,8 +112,8 @@ const DEFAULT_CATEGORIES: LearningCategory[] = [
 ];
 
 export function LearningArea() {
-  const [categories, setCategories] = useState<LearningCategory[]>([]);
-  const [resources, setResources] = useState<LearningResource[]>([]);
+  const { data: categories, sync: syncCategories, loading: categoriesLoading } = useSyncedData<any[]>('learning_categories', []);
+  const { data: resources, sync: syncResources, loading: resourcesLoading } = useSyncedData<any[]>('learning_resources', []);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [expandedResource, setExpandedResource] = useState<string | null>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
@@ -131,53 +132,44 @@ export function LearningArea() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
   useEffect(() => {
-    const storedCategories = localStorage.getItem('learning-categories');
-    const storedResources = localStorage.getItem('learning-resources');
-
-    if (storedCategories) {
-      setCategories(JSON.parse(storedCategories));
-    } else {
-      setCategories(DEFAULT_CATEGORIES);
-      localStorage.setItem('learning-categories', JSON.stringify(DEFAULT_CATEGORIES));
-    }
-
-    if (storedResources) {
-      setResources(JSON.parse(storedResources));
+    if (categories.length === 0) {
+      const defaultCategories = [
+        { id: '1', name: '英语', icon: '📚', color: '#3B82F6' },
+        { id: '2', name: '视频剪辑', icon: '🎬', color: '#8B5CF6' },
+        { id: '3', name: 'AI学习', icon: '🤖', color: '#10B981' },
+        { id: '4', name: '数据分析', icon: '📊', color: '#14B8A6' },
+      ];
+      syncCategories(defaultCategories);
     }
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('learning-categories', JSON.stringify(categories));
-  }, [categories]);
-
-  useEffect(() => {
-    localStorage.setItem('learning-resources', JSON.stringify(resources));
-  }, [resources]);
-
-  const addCategory = () => {
+  const addCategory = async () => {
     if (!newCategoryName.trim()) return;
-    const category: LearningCategory = {
+    const category = {
       id: Date.now().toString(),
       name: newCategoryName.trim(),
       icon: newCategoryIcon,
       color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'),
     };
-    setCategories([...categories, category]);
+    const newCategories = [...categories, category];
+    await syncCategories(newCategories);
     setNewCategoryName('');
     setNewCategoryIcon('📖');
     setShowAddCategoryModal(false);
   };
 
-  const deleteCategory = (id: string) => {
-    setCategories(categories.filter(c => c.id !== id));
-    setResources(resources.filter(r => r.categoryId !== id));
+  const deleteCategory = async (id: string) => {
+    const newCategories = categories.filter(c => c.id !== id);
+    const newResources = resources.filter(r => r.category_id !== id);
+    await syncCategories(newCategories);
+    await syncResources(newResources);
   };
 
-  const addResource = () => {
+  const addResource = async () => {
     if (!newResource.title.trim() || !selectedCategory || selectedCategory === 'all') return;
-    const resource: LearningResource = {
+    const resource = {
       id: Date.now().toString(),
-      categoryId: selectedCategory,
+      category_id: selectedCategory,
       title: newResource.title.trim(),
       type: newResource.type,
       source: newResource.source.trim(),
@@ -185,64 +177,69 @@ export function LearningArea() {
       stages: [],
       notes: '',
       insights: '',
-      createdAt: Date.now(),
+      created_at: new Date().toISOString(),
     };
-    setResources([resource, ...resources]);
+    const newResources = [resource, ...resources];
+    await syncResources(newResources);
     setNewResource({ title: '', type: 'video', source: '', link: '' });
     setShowAddResourceModal(false);
     setExpandedResource(resource.id);
   };
 
-  const deleteResource = (id: string) => {
-    setResources(resources.filter(r => r.id !== id));
+  const deleteResource = async (id: string) => {
+    const newResources = resources.filter(r => r.id !== id);
+    await syncResources(newResources);
   };
 
-  const addStage = (resourceId: string) => {
+  const addStage = async (resourceId: string) => {
     if (!newStage.name.trim()) return;
     const resource = resources.find(r => r.id === resourceId);
     if (!resource) return;
-    const stage: LearningStage = {
+    const stage = {
       id: Date.now().toString(),
       name: newStage.name.trim(),
       description: newStage.description.trim(),
       tasks: [],
       order: resource.stages.length,
     };
-    setResources(resources.map(r => r.id === resourceId ? {
+    const newResources = resources.map(r => r.id === resourceId ? {
       ...r,
       stages: [...r.stages, stage],
-    } : r));
+    } : r);
+    await syncResources(newResources);
     setNewStage({ name: '', description: '' });
     setShowAddStageModal(null);
     setExpandedStage(stage.id);
   };
 
-  const deleteStage = (resourceId: string, stageId: string) => {
-    setResources(resources.map(r => r.id === resourceId ? {
+  const deleteStage = async (resourceId: string, stageId: string) => {
+    const newResources = resources.map(r => r.id === resourceId ? {
       ...r,
       stages: r.stages.filter(s => s.id !== stageId),
-    } : r));
+    } : r);
+    await syncResources(newResources);
   };
 
-  const addTask = (resourceId: string, stageId: string) => {
+  const addTask = async (resourceId: string, stageId: string) => {
     if (!newTaskTitle.trim()) return;
-    const task: LearningTask = {
+    const task = {
       id: Date.now().toString(),
       title: newTaskTitle.trim(),
       completed: false,
     };
-    setResources(resources.map(r => r.id === resourceId ? {
+    const newResources = resources.map(r => r.id === resourceId ? {
       ...r,
       stages: r.stages.map(s => s.id === stageId ? {
         ...s,
         tasks: [...s.tasks, task],
       } : s),
-    } : r));
+    } : r);
+    await syncResources(newResources);
     setNewTaskTitle('');
   };
 
-  const toggleTask = (resourceId: string, stageId: string, taskId: string) => {
-    setResources(resources.map(r => r.id === resourceId ? {
+  const toggleTask = async (resourceId: string, stageId: string, taskId: string) => {
+    const newResources = resources.map(r => r.id === resourceId ? {
       ...r,
       stages: r.stages.map(s => s.id === stageId ? {
         ...s,
@@ -252,17 +249,19 @@ export function LearningArea() {
           completedAt: !t.completed ? Date.now() : undefined,
         } : t),
       } : s),
-    } : r));
+    } : r);
+    await syncResources(newResources);
   };
 
-  const deleteTask = (resourceId: string, stageId: string, taskId: string) => {
-    setResources(resources.map(r => r.id === resourceId ? {
+  const deleteTask = async (resourceId: string, stageId: string, taskId: string) => {
+    const newResources = resources.map(r => r.id === resourceId ? {
       ...r,
       stages: r.stages.map(s => s.id === stageId ? {
         ...s,
         tasks: s.tasks.filter(t => t.id !== taskId),
       } : s),
-    } : r));
+    } : r);
+    await syncResources(newResources);
   };
 
   const updateNotes = (resourceId: string, notes: string) => {
