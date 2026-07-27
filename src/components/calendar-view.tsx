@@ -21,7 +21,7 @@ const EVENT_COLORS = [
 ];
 
 export function CalendarView() {
-  const { data: events, loading, addItem, deleteItem } = useSyncedData<CalendarEvent>('calendar_events');
+  const { data: events, loading, addItem, deleteItem } = useSyncedData<CalendarEvent>('calendar_events', 'calendar-events');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);

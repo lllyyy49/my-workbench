@@ -45,7 +45,7 @@ const TREATMENT_TYPES = ['膏药', '凝胶', '敷贴', '贴剂', '喷剂', '口�
 const COLORS = ['#14B8A6', '#0EA5E9', '#8B5CF6', '#F59E0B', '#EF4444', '#10B981', '#6366F1', '#EC4899'];
 
 export function DiseaseTrends() {
-  const { data: trends, addData: addTrend, updateData: updateTrend, deleteData: deleteTrend, sync, loading } = useSyncedData<DiseaseTrend>('disease_trends');
+  const { data: trends, addItem: addTrend, updateItem: updateTrend, deleteItem: deleteTrend, loading } = useSyncedData<DiseaseTrend>('disease_trends', 'disease-trends');
   const [showForm, setShowForm] = useState(false);
   const [editingTrend, setEditingTrend] = useState<DiseaseTrend | null>(null);
   const [searchQuery, setSearchQuery] = useState('');

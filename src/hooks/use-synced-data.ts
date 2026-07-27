@@ -123,6 +123,38 @@ export function useSyncedData<T>(tableName: string, storageKey: string) {
     }
   }, [tableName]);
 
+  // 批量同步（替换所有数据）
+  const sync = useCallback(async (items: T[]) => {
+    try {
+      // 先删除所有数据
+      const { error: deleteError } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('user_id', USER_ID);
+
+      if (deleteError) throw deleteError;
+
+      // 插入新数据
+      if (items.length > 0) {
+        const { error: insertError } = await supabase
+          .from(tableName)
+          .insert(
+            items.map(item => ({
+              ...item,
+              user_id: USER_ID,
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
+
+      setData(items);
+    } catch (err) {
+      console.error(`同步${tableName}失败:`, err);
+      throw err;
+    }
+  }, [tableName]);
+
   // 初始加载
   useEffect(() => {
     loadData();
@@ -136,6 +168,7 @@ export function useSyncedData<T>(tableName: string, storageKey: string) {
     updateItem,
     deleteItem,
     deleteItems,
+    sync,
     refresh: loadData,
   };
 }

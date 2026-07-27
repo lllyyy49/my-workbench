@@ -13,7 +13,7 @@ interface Note {
 }
 
 export function QuickNotes() {
-  const { data: notes, loading, addData, updateData, deleteData } = useSyncedData<Note>('notes');
+  const { data: notes, loading, addItem, updateItem, deleteItem } = useSyncedData<Note>('notes', 'notes');
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [title, setTitle] = useState('');
@@ -37,7 +37,7 @@ export function QuickNotes() {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    await addData(note);
+    await addItem(note);
     setSelectedNoteId(note.id);
     setTitle(note.title);
     setContent(note.content);
@@ -45,11 +45,11 @@ export function QuickNotes() {
 
   const updateNote = async () => {
     if (!selectedNoteId) return;
-    await updateData(selectedNoteId, { title: title || '无标题笔记', content, updatedAt: Date.now() });
+    await updateItem(selectedNoteId, { title: title || '无标题笔记', content, updatedAt: Date.now() });
   };
 
   const deleteNote = async (id: string) => {
-    await deleteData(id);
+    await deleteItem(id);
     if (selectedNoteId === id) {
       const remaining = notes?.filter(n => n.id !== id) || [];
       if (remaining.length > 0) {

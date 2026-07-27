@@ -112,8 +112,8 @@ const DEFAULT_CATEGORIES: LearningCategory[] = [
 ];
 
 export function LearningArea() {
-  const { data: categories, sync: syncCategories, loading: categoriesLoading } = useSyncedData<any[]>('learning_categories', []);
-  const { data: resources, sync: syncResources, loading: resourcesLoading } = useSyncedData<any[]>('learning_resources', []);
+  const { data: categories, sync: syncCategories, loading: categoriesLoading } = useSyncedData<any>('learning_categories', 'learning-categories');
+  const { data: resources, sync: syncResources, loading: resourcesLoading } = useSyncedData<any>('learning_resources', 'learning-resources');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [expandedResource, setExpandedResource] = useState<string | null>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
@@ -141,7 +141,7 @@ export function LearningArea() {
       ];
       syncCategories(defaultCategories);
     }
-  }, []);
+  }, [categories.length, syncCategories]);
 
   const addCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -215,7 +215,7 @@ export function LearningArea() {
   const deleteStage = async (resourceId: string, stageId: string) => {
     const newResources = resources.map(r => r.id === resourceId ? {
       ...r,
-      stages: r.stages.filter(s => s.id !== stageId),
+      stages: r.stages.filter((s: any) => s.id !== stageId),
     } : r);
     await syncResources(newResources);
   };
@@ -229,7 +229,7 @@ export function LearningArea() {
     };
     const newResources = resources.map(r => r.id === resourceId ? {
       ...r,
-      stages: r.stages.map(s => s.id === stageId ? {
+      stages: r.stages.map((s: any) => s.id === stageId ? {
         ...s,
         tasks: [...s.tasks, task],
       } : s),
@@ -241,9 +241,9 @@ export function LearningArea() {
   const toggleTask = async (resourceId: string, stageId: string, taskId: string) => {
     const newResources = resources.map(r => r.id === resourceId ? {
       ...r,
-      stages: r.stages.map(s => s.id === stageId ? {
+      stages: r.stages.map((s: any) => s.id === stageId ? {
         ...s,
-        tasks: s.tasks.map(t => t.id === taskId ? {
+        tasks: s.tasks.map((t: any) => t.id === taskId ? {
           ...t,
           completed: !t.completed,
           completedAt: !t.completed ? Date.now() : undefined,
@@ -256,26 +256,28 @@ export function LearningArea() {
   const deleteTask = async (resourceId: string, stageId: string, taskId: string) => {
     const newResources = resources.map(r => r.id === resourceId ? {
       ...r,
-      stages: r.stages.map(s => s.id === stageId ? {
+      stages: r.stages.map((s: any) => s.id === stageId ? {
         ...s,
-        tasks: s.tasks.filter(t => t.id !== taskId),
+        tasks: s.tasks.filter((t: any) => t.id !== taskId),
       } : s),
     } : r);
     await syncResources(newResources);
   };
 
-  const updateNotes = (resourceId: string, notes: string) => {
-    setResources(resources.map(r => r.id === resourceId ? { ...r, notes } : r));
+  const updateNotes = async (resourceId: string, notes: string) => {
+    const newResources = resources.map(r => r.id === resourceId ? { ...r, notes } : r);
+    await syncResources(newResources);
   };
 
-  const updateInsights = (resourceId: string, insights: string) => {
-    setResources(resources.map(r => r.id === resourceId ? { ...r, insights } : r));
+  const updateInsights = async (resourceId: string, insights: string) => {
+    const newResources = resources.map(r => r.id === resourceId ? { ...r, insights } : r);
+    await syncResources(newResources);
   };
 
   // 计算阶段进度
   const getStageProgress = (stage: LearningStage): number => {
     if (stage.tasks.length === 0) return 0;
-    const completed = stage.tasks.filter(t => t.completed).length;
+    const completed = stage.tasks.filter((t: any) => t.completed).length;
     return Math.round((completed / stage.tasks.length) * 100);
   };
 
@@ -294,8 +296,8 @@ export function LearningArea() {
 
   const totalResources = resources.length;
   const totalStages = resources.reduce((sum, r) => sum + r.stages.length, 0);
-  const totalTasks = resources.reduce((sum, r) => sum + r.stages.reduce((s, st) => s + st.tasks.length, 0), 0);
-  const completedTasks = resources.reduce((sum, r) => sum + r.stages.reduce((s, st) => s + st.tasks.filter(t => t.completed).length, 0), 0);
+  const totalTasks = resources.reduce((sum, r) => sum + r.stages.reduce((s: number, st: any) => s + st.tasks.length, 0), 0);
+  const completedTasks = resources.reduce((sum, r) => sum + r.stages.reduce((s: number, st: any) => s + st.tasks.filter((t: any) => t.completed).length, 0), 0);
 
   // 计算今日学习数据
   const todayStart = new Date();
@@ -303,16 +305,16 @@ export function LearningArea() {
   const todayStartTimestamp = todayStart.getTime();
 
   const todayCompletedTasks = resources.reduce((sum, r) =>
-    sum + r.stages.reduce((s, st) =>
-      s + st.tasks.filter(t => t.completed && t.completedAt && t.completedAt >= todayStartTimestamp).length
+    sum + r.stages.reduce((s: number, st: any) =>
+      s + st.tasks.filter((t: any) => t.completed && t.completedAt && t.completedAt >= todayStartTimestamp).length
     , 0)
   , 0);
 
   const todayNewStages = resources.reduce((sum, r) =>
-    sum + r.stages.filter(s => {
+    sum + r.stages.filter((s: any) => {
       // 使用阶段中最早的任务创建时间作为阶段创建时间
       if (s.tasks.length === 0) return false;
-      const earliestTask = s.tasks.reduce((earliest, t) => {
+      const earliestTask = s.tasks.reduce((earliest: number, t: any) => {
         const taskId = parseInt(t.id);
         return taskId < earliest ? taskId : earliest;
       }, Infinity);
@@ -472,7 +474,7 @@ export function LearningArea() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground ml-6">
                         {resource.source && <span>来源: {resource.source}</span>}
                         <span>{resource.stages.length} 个阶段</span>
-                        <span>{resource.stages.reduce((s, st) => s + st.tasks.length, 0)} 个任务</span>
+                        <span>{resource.stages.reduce((s: number, st: any) => s + st.tasks.length, 0)} 个任务</span>
                       </div>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
@@ -532,10 +534,10 @@ export function LearningArea() {
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {resource.stages.map((stage, index) => {
+                          {resource.stages.map((stage: any, index: number) => {
                             const stageProgress = getStageProgress(stage);
                             const isStageExpanded = expandedStage === stage.id;
-                            const completedTasks = stage.tasks.filter(t => t.completed).length;
+                            const completedTasks = stage.tasks.filter((t: any) => t.completed).length;
 
                             return (
                               <div key={stage.id} className="rounded-lg border border-border overflow-hidden">
@@ -598,7 +600,7 @@ export function LearningArea() {
                                       </button>
                                     </div>
                                     {/* 任务列表 */}
-                                    {stage.tasks.map(task => (
+                                    {stage.tasks.map((task: any) => (
                                       <div key={task.id} className="flex items-center gap-2 group">
                                         <button
                                           onClick={() => toggleTask(resource.id, stage.id, task.id)}

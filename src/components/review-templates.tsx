@@ -24,7 +24,7 @@ interface ReviewImage {
 }
 
 export function ReviewTemplates() {
-  const { data: templates, setData: setTemplates, loading, sync } = useSyncedData<ReviewTemplate[]>('review_templates', []);
+  const { data: templates, loading, sync } = useSyncedData<ReviewTemplate>('review_templates', 'review-templates');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newText, setNewText] = useState('');
   const [newCategory, setNewCategory] = useState('');
@@ -267,7 +267,7 @@ export function ReviewTemplates() {
         }
         
         if (newTemplates.length > 0) {
-          setTemplates([...newTemplates, ...templates]);
+          await sync([...newTemplates, ...templates]);
           alert(`成功导入 ${newTemplates.length} 条评价`);
         } else {
           alert('所有评价内容均已存在，无需重复添加');
@@ -391,24 +391,6 @@ export function ReviewTemplates() {
           <div>
             <h2 className="text-2xl font-semibold mb-2">商品评价库</h2>
             <p className="text-muted-foreground text-sm">管理评价模板，自动识别重复内容</p>
-          </div>
-          <div className="flex gap-1">
-            <button
-              onClick={undo}
-              disabled={!canUndo}
-              className="p-2 rounded-lg hover:bg-secondary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              title="撤销 (Ctrl+Z)"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </button>
-            <button
-              onClick={redo}
-              disabled={!canRedo}
-              className="p-2 rounded-lg hover:bg-secondary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              title="恢复 (Ctrl+Y)"
-            >
-              <RotateCw className="h-4 w-4" />
-            </button>
           </div>
         </div>
         <div className="flex gap-2">

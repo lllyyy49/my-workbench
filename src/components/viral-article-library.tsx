@@ -37,7 +37,7 @@ const CATEGORIES = [
 ];
 
 export function ViralArticleLibrary() {
-  const { data: articles, sync, loading } = useSyncedData<ViralArticle>('viral_articles');
+  const { data: articles, sync, loading } = useSyncedData<ViralArticle>('viral_articles', 'viral-articles');
   const [showForm, setShowForm] = useState(false);
   const [editingArticle, setEditingArticle] = useState<ViralArticle | null>(null);
   const [viewingArticle, setViewingArticle] = useState<ViralArticle | null>(null);
@@ -125,7 +125,7 @@ export function ViralArticleLibrary() {
     setEditingArticle(null);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.title.trim() || !formData.content.trim()) {
       alert('请填写标题和内容');
       return;

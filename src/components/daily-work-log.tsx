@@ -20,7 +20,7 @@ interface WorkLog {
 }
 
 export function DailyWorkLog() {
-  const { data: logs, loading, addData, updateData, deleteData } = useSyncedData<WorkLog>('work_logs');
+  const { data: logs, loading, addItem: addLogItem, updateItem, deleteItem: deleteLogItem } = useSyncedData<WorkLog>('work_logs', 'work-logs');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [newItem, setNewItem] = useState('');
   const [summary, setSummary] = useState('');
@@ -44,22 +44,9 @@ export function DailyWorkLog() {
 
   const currentLogItems = selectedDate ? (logsByDate[selectedDate] || []) : [];
 
-  const createLogForDate = () => {
-    if (!selectedDate) return;
-    const newLog: WorkLog = {
-      id: Date.now().toString(),
-      date: selectedDate,
-      items: [],
-      summary: '',
-      createdAt: Date.now(),
-    };
-    setLogs([newLog, ...logs]);
-    return newLog;
-  };
-
   const addItem = async () => {
     if (!newItem.trim() || !selectedDate) return;
-    await addData({
+    await addLogItem({
       date: selectedDate,
       content: newItem.trim(),
       completed: false,
@@ -70,11 +57,11 @@ export function DailyWorkLog() {
   };
 
   const toggleItem = async (item: WorkLog) => {
-    await updateData(item.id, { completed: !item.completed });
+    await updateItem(item.id, { completed: !item.completed });
   };
 
   const deleteItem = async (itemId: string) => {
-    await deleteData(itemId);
+    await deleteLogItem(itemId);
   };
 
   const startEditItem = (item: WorkLog) => {
@@ -84,7 +71,7 @@ export function DailyWorkLog() {
 
   const saveEditItem = async () => {
     if (!editText.trim() || !editingItemId) return;
-    await updateData(editingItemId, { content: editText.trim() });
+    await updateItem(editingItemId, { content: editText.trim() });
     setEditingItemId(null);
     setEditText('');
   };
@@ -94,7 +81,7 @@ export function DailyWorkLog() {
     // 更新该日期的所有记录的 summary
     const items = logsByDate[selectedDate] || [];
     for (const item of items) {
-      await updateData(item.id, { summary: value });
+      await updateItem(item.id, { summary: value });
     }
   };
 
@@ -116,8 +103,8 @@ export function DailyWorkLog() {
     return dates;
   };
 
-  const completedCount = currentLog?.items.filter(i => i.completed).length || 0;
-  const totalCount = currentLog?.items.length || 0;
+  const completedCount = currentLogItems.filter(i => i.completed).length;
+  const totalCount = currentLogItems.length;
 
   return (
     <div className="space-y-6">
@@ -195,9 +182,9 @@ export function DailyWorkLog() {
         </div>
 
         {/* 工作项列表 */}
-        {currentItems.length > 0 ? (
+        {currentLogItems.length > 0 ? (
           <div className="space-y-2">
-            {currentItems.map(item => (
+            {currentLogItems.map(item => (
               <div
                 key={item.id}
                 className={`flex items-center gap-3 p-3 rounded-lg border transition-all group ${

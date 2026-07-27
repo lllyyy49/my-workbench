@@ -13,14 +13,14 @@ interface Todo {
 }
 
 export function TodoList() {
-  const { data: todos, setData: setTodos, loading } = useSyncedData<Todo[]>('todos', []);
+  const { data: todos, loading, addItem, updateItem, deleteItem, deleteItems, sync } = useSyncedData<Todo>('todos', 'todos');
   const [newTodo, setNewTodo] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBatchMode, setIsBatchMode] = useState(false);
 
-  const addTodo = () => {
+  const addTodo = async () => {
     if (!newTodo.trim()) return;
     const todo: Todo = {
       id: Date.now().toString(),
@@ -28,16 +28,23 @@ export function TodoList() {
       completed: false,
       createdAt: Date.now(),
     };
-    setTodos([todo, ...todos]);
+    await addItem({
+      text: newTodo.trim(),
+      completed: false,
+      createdAt: Date.now(),
+    });
     setNewTodo('');
   };
 
-  const toggleTodo = (id: string) => {
-    setTodos(todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  const toggleTodo = async (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+      await updateItem(id, { completed: !todo.completed });
+    }
   };
 
-  const deleteTodo = (id: string) => {
-    setTodos(todos.filter(t => t.id !== id));
+  const deleteTodo = async (id: string) => {
+    await deleteItem(id);
   };
 
   // 批量选择切换
@@ -61,10 +68,10 @@ export function TodoList() {
   };
 
   // 批量删除
-  const handleBatchDelete = () => {
+  const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return;
     if (confirm(`确定要删除选中的 ${selectedIds.size} 条待办吗？`)) {
-      setTodos(todos.filter(t => !selectedIds.has(t.id)));
+      await deleteItems(Array.from(selectedIds));
       setSelectedIds(new Set());
       setIsBatchMode(false);
     }
@@ -81,9 +88,9 @@ export function TodoList() {
     setEditText(todo.text);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editText.trim() || !editingId) return;
-    setTodos(todos.map(t => t.id === editingId ? { ...t, text: editText.trim() } : t));
+    await updateItem(editingId, { text: editText.trim() });
     setEditingId(null);
     setEditText('');
   };
