@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Check, X, CheckSquare, Square, RotateCcw, RotateCw } from 'lucide-react';
 import { useUndoRedo } from '@/hooks/use-undo-redo';
+import { useSyncedData } from '@/hooks/use-synced-data';
 
 interface Todo {
   id: string;
@@ -12,23 +13,12 @@ interface Todo {
 }
 
 export function TodoList() {
-  const { state: todos, setState: setTodos, undo, redo, canUndo, canRedo } = useUndoRedo<Todo[]>([]);
+  const { data: todos, setData: setTodos, loading } = useSyncedData<Todo[]>('todos', []);
   const [newTodo, setNewTodo] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBatchMode, setIsBatchMode] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('todos');
-    if (stored) {
-      setTodos(JSON.parse(stored));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('todos', JSON.stringify(todos));
-  }, [todos]);
 
   const addTodo = () => {
     if (!newTodo.trim()) return;
@@ -116,31 +106,29 @@ export function TodoList() {
   const pendingTodos = todos.filter(t => !t.completed);
   const completedTodos = todos.filter(t => t.completed);
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold mb-2">待办事项</h2>
+            <p className="text-muted-foreground text-sm">管理你的日常任务</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-muted-foreground">加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div>
             <h2 className="text-2xl font-semibold mb-2">待办事项</h2>
-            <p className="text-muted-foreground text-sm">管理你的日常任务</p>
-          </div>
-          <div className="flex gap-1">
-            <button
-              onClick={undo}
-              disabled={!canUndo}
-              className="p-2 rounded-lg hover:bg-secondary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              title="撤销 (Ctrl+Z)"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </button>
-            <button
-              onClick={redo}
-              disabled={!canRedo}
-              className="p-2 rounded-lg hover:bg-secondary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              title="恢复 (Ctrl+Y)"
-            >
-              <RotateCw className="h-4 w-4" />
-            </button>
+            <p className="text-muted-foreground text-sm">管理你的日常任务（云同步）</p>
           </div>
         </div>
         {isBatchMode ? (
