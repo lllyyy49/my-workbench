@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, TrendingUp, Calendar, Users, Thermometer, Pill, Package, Upload, X, Filter, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { DataImportService } from '@/components/data-import-service';
+import { useSyncedData } from '@/hooks/use-synced-data';
 
 interface DiseaseTrend {
   id: string;
@@ -44,7 +45,7 @@ const TREATMENT_TYPES = ['膏药', '凝胶', '敷贴', '贴剂', '喷剂', '口�
 const COLORS = ['#14B8A6', '#0EA5E9', '#8B5CF6', '#F59E0B', '#EF4444', '#10B981', '#6366F1', '#EC4899'];
 
 export function DiseaseTrends() {
-  const [trends, setTrends] = useState<DiseaseTrend[]>([]);
+  const { data: trends, addData: addTrend, updateData: updateTrend, deleteData: deleteTrend, sync, loading } = useSyncedData<DiseaseTrend>('disease_trends');
   const [showForm, setShowForm] = useState(false);
   const [editingTrend, setEditingTrend] = useState<DiseaseTrend | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,17 +80,6 @@ export function DiseaseTrends() {
     link: '',
     notes: '',
   });
-
-  useEffect(() => {
-    const stored = localStorage.getItem('disease-trends');
-    if (stored) {
-      setTrends(JSON.parse(stored));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('disease-trends', JSON.stringify(trends));
-  }, [trends]);
 
   const resetForm = () => {
     setFormData({
@@ -126,9 +116,9 @@ export function DiseaseTrends() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('确定要删除这条病症趋势吗？')) {
-      setTrends(trends.filter(t => t.id !== id));
+      await deleteTrend(id);
     }
   };
 
@@ -206,10 +196,12 @@ export function DiseaseTrends() {
   };
 
   // 批量删除
-  const handleBatchDelete = () => {
+  const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return;
     if (confirm(`确定要删除选中的 ${selectedIds.size} 条病症趋势吗？`)) {
-      setTrends(trends.filter(t => !selectedIds.has(t.id)));
+      for (const id of selectedIds) {
+        await deleteTrend(id);
+      }
       setSelectedIds(new Set());
       setIsBatchMode(false);
     }
@@ -222,9 +214,11 @@ export function DiseaseTrends() {
   };
 
   // 批量导入处理
-  const handleBatchImport = (importedData: any[]) => {
+  const handleBatchImport = async (importedData: any[]) => {
     if (importedData.length > 0) {
-      setTrends([...importedData, ...trends]);
+      for (const trend of importedData) {
+        await addTrend(trend);
+      }
     }
   };
 
@@ -252,9 +246,9 @@ export function DiseaseTrends() {
     };
 
     if (editingTrend) {
-      setTrends(trends.map(t => t.id === editingTrend.id ? trendData : t));
+      await updateTrend(editingTrend.id, trendData);
     } else {
-      setTrends([trendData, ...trends]);
+      await addTrend(trendData);
     }
 
     setShowForm(false);
