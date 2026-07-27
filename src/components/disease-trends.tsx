@@ -16,9 +16,19 @@ interface DiseaseTrend {
   treatmentTypes: string[]; // 对症药物类型（膏药、凝胶、敷贴等）
   xiaohongshuHeat: number; // 小红书热度
   productSuggestions: string; // 商品建议
+  customProducts: CustomProduct[]; // 自定义产品列表
   notes: string; // 备注
   createdAt: number;
   updatedAt: number;
+}
+
+interface CustomProduct {
+  id: string;
+  name: string; // 产品名称
+  brand: string; // 品牌
+  price: string; // 价格
+  link: string; // 产品链接
+  notes: string; // 备注
 }
 
 const DEPARTMENTS = [
@@ -55,6 +65,18 @@ export function DiseaseTrends() {
     treatmentTypes: [] as string[],
     xiaohongshuHeat: '',
     productSuggestions: '',
+    customProducts: [] as CustomProduct[],
+    notes: '',
+  });
+
+  // 产品表单状态
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<CustomProduct | null>(null);
+  const [productForm, setProductForm] = useState({
+    name: '',
+    brand: '',
+    price: '',
+    link: '',
     notes: '',
   });
 
@@ -80,6 +102,7 @@ export function DiseaseTrends() {
       treatmentTypes: [],
       xiaohongshuHeat: '',
       productSuggestions: '',
+      customProducts: [],
       notes: '',
     });
     setEditingTrend(null);
@@ -96,6 +119,7 @@ export function DiseaseTrends() {
       treatmentTypes: trend.treatmentTypes,
       xiaohongshuHeat: trend.xiaohongshuHeat.toString(),
       productSuggestions: trend.productSuggestions,
+      customProducts: trend.customProducts || [],
       notes: trend.notes,
     });
     setEditingTrend(trend);
@@ -105,6 +129,60 @@ export function DiseaseTrends() {
   const handleDelete = (id: string) => {
     if (confirm('确定要删除这条病症趋势吗？')) {
       setTrends(trends.filter(t => t.id !== id));
+    }
+  };
+
+  // 产品管理函数
+  const openProductForm = (product?: CustomProduct) => {
+    if (product) {
+      setProductForm({
+        name: product.name,
+        brand: product.brand,
+        price: product.price,
+        link: product.link,
+        notes: product.notes,
+      });
+      setEditingProduct(product);
+    } else {
+      setProductForm({ name: '', brand: '', price: '', link: '', notes: '' });
+      setEditingProduct(null);
+    }
+    setShowProductForm(true);
+  };
+
+  const saveProduct = () => {
+    if (!productForm.name.trim()) {
+      alert('请填写产品名称');
+      return;
+    }
+
+    const newProduct: CustomProduct = {
+      id: editingProduct?.id || Date.now().toString(),
+      ...productForm,
+    };
+
+    if (editingProduct) {
+      setFormData({
+        ...formData,
+        customProducts: formData.customProducts.map(p => p.id === editingProduct.id ? newProduct : p),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        customProducts: [...formData.customProducts, newProduct],
+      });
+    }
+
+    setShowProductForm(false);
+    setEditingProduct(null);
+  };
+
+  const deleteProduct = (productId: string) => {
+    if (confirm('确定要删除这个产品吗？')) {
+      setFormData({
+        ...formData,
+        customProducts: formData.customProducts.filter(p => p.id !== productId),
+      });
     }
   };
 
@@ -167,6 +245,7 @@ export function DiseaseTrends() {
       treatmentTypes: formData.treatmentTypes,
       xiaohongshuHeat: parseInt(formData.xiaohongshuHeat) || 0,
       productSuggestions: formData.productSuggestions.trim(),
+      customProducts: formData.customProducts,
       notes: formData.notes.trim(),
       createdAt: editingTrend?.createdAt || Date.now(),
       updatedAt: Date.now(),
@@ -408,6 +487,7 @@ export function DiseaseTrends() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">药物类型</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">热度</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">商品建议</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">我的产品</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">操作</th>
                 </tr>
               </thead>
@@ -453,6 +533,15 @@ export function DiseaseTrends() {
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate">
                       {trend.productSuggestions || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {trend.customProducts && trend.customProducts.length > 0 ? (
+                        <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-medium">
+                          {trend.customProducts.length} 个产品
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {!isBatchMode && (
@@ -656,6 +745,53 @@ export function DiseaseTrends() {
                 </div>
               </div>
 
+              {/* 自定义产品管理 */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium">我的产品</label>
+                  <button
+                    onClick={() => openProductForm()}
+                    className="px-3 py-1 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all text-xs font-medium flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    添加产品
+                  </button>
+                </div>
+
+                {formData.customProducts.length > 0 && (
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {formData.customProducts.map(product => (
+                      <div key={product.id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/50 border border-border">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{product.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {product.brand && `${product.brand} · `}{product.price && `¥${product.price}`}
+                          </p>
+                        </div>
+                        <div className="flex gap-1 ml-2">
+                          <button
+                            onClick={() => openProductForm(product)}
+                            className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => deleteProduct(product.id)}
+                            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {formData.customProducts.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">暂无产品，点击上方按钮添加</p>
+                )}
+              </div>
+
               {/* 备注 */}
               <div>
                 <label className="block text-sm font-medium mb-1.5">备注</label>
@@ -677,6 +813,98 @@ export function DiseaseTrends() {
                 </button>
                 <button
                   onClick={handleSubmit}
+                  className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all font-medium text-sm"
+                >
+                  保存
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 产品编辑弹窗 */}
+      {showProductForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl border border-border w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">
+                {editingProduct ? '编辑产品' : '添加产品'}
+              </h3>
+              <button
+                onClick={() => { setShowProductForm(false); setEditingProduct(null); }}
+                className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5">产品名称 *</label>
+                <input
+                  type="text"
+                  value={productForm.name}
+                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                  placeholder="如：XX 牌膏药"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">品牌</label>
+                <input
+                  type="text"
+                  value={productForm.brand}
+                  onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
+                  placeholder="如：XX 品牌"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">价格</label>
+                <input
+                  type="text"
+                  value={productForm.price}
+                  onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                  placeholder="如：99"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">产品链接</label>
+                <input
+                  type="text"
+                  value={productForm.link}
+                  onChange={(e) => setProductForm({ ...productForm, link: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">备注</label>
+                <textarea
+                  value={productForm.notes}
+                  onChange={(e) => setProductForm({ ...productForm, notes: e.target.value })}
+                  placeholder="产品说明..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => { setShowProductForm(false); setEditingProduct(null); }}
+                  className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-secondary transition-all font-medium text-sm"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={saveProduct}
                   className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all font-medium text-sm"
                 >
                   保存
